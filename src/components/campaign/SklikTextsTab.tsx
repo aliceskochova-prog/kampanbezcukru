@@ -4,14 +4,6 @@ interface SklikTextsTabProps {
   camp: Campaign;
   setSklikText: (product: string, field: string, idx: number, val: string) => void;
 }
-
-function trimToLimit(text: string, max: number): string {
-  if (text.length <= max) return text;
-  const trimmed = text.slice(0, max);
-  const lastSpace = trimmed.lastIndexOf(" ");
-  return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
-}
-
 export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
   return (
     <div>
@@ -30,60 +22,40 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                 <div className="text-xs font-bold text-channel-sklik mb-3">🔍 SEARCH reklama</div>
                 <div className="mb-3">
                   <div className="text-xs font-semibold text-channel-sklik/80 mb-2">TITULEK – max 30 zn. (4 varianty)</div>
-                  {Array.from({ length: 4 }, (_, i) => {
-                    const val = st.headlines?.[i] || "";
-                    const over = val.length > 30;
-                    return (
-                      <div key={i} className="relative mb-1 flex items-center gap-1">
-                        <div className="relative flex-1">
-                          <input
-                            value={val}
-                            onChange={e => setSklikText(p, "headlines", i, e.target.value)}
-                            placeholder={`Titulek ${i + 1}`}
-                            className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${over ? "border-destructive" : "border-input"}`}
-                          />
-                          <span className="absolute right-1.5 top-1.5">
-                            <CharCount value={val} max={30} warn={25} />
-                          </span>
-                        </div>
-                        {over && (
-                          <button
-                            onClick={() => setSklikText(p, "headlines", i, trimToLimit(val, 30))}
-                            className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap"
-                          >✂️ Zkrátit</button>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <div key={i} className="relative mb-1">
+                      <input
+                        value={st.headlines?.[i] || ""}
+                        onChange={e => setSklikText(p, "headlines", i, e.target.value)}
+                        placeholder={`Titulek ${i + 1}`}
+                        className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${
+                          (st.headlines?.[i] || "").length > 30 ? "border-destructive" : "border-input"
+                        }`}
+                      />
+                      <span className="absolute right-1.5 top-1.5">
+                        <CharCount value={st.headlines?.[i]} max={30} warn={25} />
+                      </span>
+                    </div>
+                  ))}
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
-                  {Array.from({ length: 2 }, (_, i) => {
-                    const val = st.descriptions?.[i] || "";
-                    const over = val.length > 90;
-                    return (
-                      <div key={i} className="mb-2">
-                        <div className="flex items-start gap-1">
-                          <textarea
-                            value={val}
-                            onChange={e => setSklikText(p, "descriptions", i, e.target.value)}
-                            placeholder={`Popisek ${i + 1}`}
-                            rows={2}
-                            className={`flex-1 px-2 py-1 rounded border text-xs bg-card resize-y ${over ? "border-destructive" : "border-input"}`}
-                          />
-                          {over && (
-                            <button
-                              onClick={() => setSklikText(p, "descriptions", i, trimToLimit(val, 90))}
-                              className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap mt-0.5"
-                            >✂️ Zkrátit</button>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <CharCount value={val} max={90} warn={80} />
-                        </div>
+                  {Array.from({ length: 2 }, (_, i) => (
+                    <div key={i} className="mb-2">
+                      <textarea
+                        value={st.descriptions?.[i] || ""}
+                        onChange={e => setSklikText(p, "descriptions", i, e.target.value)}
+                        placeholder={`Popisek ${i + 1}`}
+                        rows={2}
+                        className={`w-full px-2 py-1 rounded border text-xs bg-card resize-y ${
+                          (st.descriptions?.[i] || "").length > 90 ? "border-destructive" : "border-input"
+                        }`}
+                      />
+                      <div className="text-right">
+                        <CharCount value={st.descriptions?.[i]} max={90} warn={80} />
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -92,88 +64,58 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                 <div className="text-xs font-bold text-channel-sklik mb-3">🖼️ DISPLAY / Kombinovaná reklama</div>
                 <div className="mb-3">
                   <div className="text-xs font-semibold text-channel-sklik/80 mb-2">KRÁTKÝ TITULEK – max 25 zn. (2 varianty)</div>
-                  {Array.from({ length: 2 }, (_, i) => {
-                    const val = st.displayShortTitles?.[i] || "";
-                    const over = val.length > 25;
-                    return (
-                      <div key={i} className="relative mb-1 flex items-center gap-1">
-                        <div className="relative flex-1">
-                          <input
-                            value={val}
-                            onChange={e => setSklikText(p, "displayShortTitles", i, e.target.value)}
-                            placeholder={`Krátký titulek ${i + 1}`}
-                            className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${over ? "border-destructive" : "border-input"}`}
-                          />
-                          <span className="absolute right-1.5 top-1.5">
-                            <CharCount value={val} max={25} warn={20} />
-                          </span>
-                        </div>
-                        {over && (
-                          <button
-                            onClick={() => setSklikText(p, "displayShortTitles", i, trimToLimit(val, 25))}
-                            className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap"
-                          >✂️ Zkrátit</button>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {Array.from({ length: 2 }, (_, i) => (
+                    <div key={i} className="relative mb-1">
+                      <input
+                        value={st.displayShortTitles?.[i] || ""}
+                        onChange={e => setSklikText(p, "displayShortTitles", i, e.target.value)}
+                        placeholder={`Krátký titulek ${i + 1}`}
+                        className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${
+                          (st.displayShortTitles?.[i] || "").length > 25 ? "border-destructive" : "border-input"
+                        }`}
+                      />
+                      <span className="absolute right-1.5 top-1.5">
+                        <CharCount value={st.displayShortTitles?.[i]} max={25} warn={20} />
+                      </span>
+                    </div>
+                  ))}
                 </div>
                 <div className="mb-3">
                   <div className="text-xs font-semibold text-channel-sklik/80 mb-2">DLOUHÝ TITULEK – max 90 zn. (2 varianty)</div>
-                  {Array.from({ length: 2 }, (_, i) => {
-                    const val = st.displayLongTitles?.[i] || "";
-                    const over = val.length > 90;
-                    return (
-                      <div key={i} className="relative mb-1 flex items-center gap-1">
-                        <div className="relative flex-1">
-                          <input
-                            value={val}
-                            onChange={e => setSklikText(p, "displayLongTitles", i, e.target.value)}
-                            placeholder={`Dlouhý titulek ${i + 1}`}
-                            className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${over ? "border-destructive" : "border-input"}`}
-                          />
-                          <span className="absolute right-1.5 top-1.5">
-                            <CharCount value={val} max={90} warn={80} />
-                          </span>
-                        </div>
-                        {over && (
-                          <button
-                            onClick={() => setSklikText(p, "displayLongTitles", i, trimToLimit(val, 90))}
-                            className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap"
-                          >✂️ Zkrátit</button>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {Array.from({ length: 2 }, (_, i) => (
+                    <div key={i} className="relative mb-1">
+                      <input
+                        value={st.displayLongTitles?.[i] || ""}
+                        onChange={e => setSklikText(p, "displayLongTitles", i, e.target.value)}
+                        placeholder={`Dlouhý titulek ${i + 1}`}
+                        className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${
+                          (st.displayLongTitles?.[i] || "").length > 90 ? "border-destructive" : "border-input"
+                        }`}
+                      />
+                      <span className="absolute right-1.5 top-1.5">
+                        <CharCount value={st.displayLongTitles?.[i]} max={90} warn={80} />
+                      </span>
+                    </div>
+                  ))}
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
-                  {Array.from({ length: 2 }, (_, i) => {
-                    const val = st.displayDescriptions?.[i] || "";
-                    const over = val.length > 90;
-                    return (
-                      <div key={i} className="mb-2">
-                        <div className="flex items-start gap-1">
-                          <textarea
-                            value={val}
-                            onChange={e => setSklikText(p, "displayDescriptions", i, e.target.value)}
-                            placeholder={`Popisek ${i + 1}`}
-                            rows={2}
-                            className={`flex-1 px-2 py-1 rounded border text-xs bg-card resize-y ${over ? "border-destructive" : "border-input"}`}
-                          />
-                          {over && (
-                            <button
-                              onClick={() => setSklikText(p, "displayDescriptions", i, trimToLimit(val, 90))}
-                              className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap mt-0.5"
-                            >✂️ Zkrátit</button>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <CharCount value={val} max={90} warn={80} />
-                        </div>
+                  {Array.from({ length: 2 }, (_, i) => (
+                    <div key={i} className="mb-2">
+                      <textarea
+                        value={st.displayDescriptions?.[i] || ""}
+                        onChange={e => setSklikText(p, "displayDescriptions", i, e.target.value)}
+                        placeholder={`Popisek ${i + 1}`}
+                        rows={2}
+                        className={`w-full px-2 py-1 rounded border text-xs bg-card resize-y ${
+                          (st.displayDescriptions?.[i] || "").length > 90 ? "border-destructive" : "border-input"
+                        }`}
+                      />
+                      <div className="text-right">
+                        <CharCount value={st.displayDescriptions?.[i]} max={90} warn={80} />
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
 
