@@ -64,7 +64,7 @@ export interface Campaign {
 
 export const defaultCampaign = (name: string): Campaign => ({
   name,
-  products: ["Želírovací směsi", "Stevialin", "Starlinea prášek", "Starlinea tekutá"],
+  products: ["Želírovací směsi", "Stevialin", "Starlinea prášek", "Starlinea tekutá", "Erythritol", "Cukřenka"],
   checklist: {},
   googleTexts: {},
   sklikTexts: {},
