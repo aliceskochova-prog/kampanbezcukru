@@ -1,1 +1,4 @@
 project_id = "iqklewanustieyaokgww"
+
+[functions.generate-fan-texts]
+verify_jwt = false
