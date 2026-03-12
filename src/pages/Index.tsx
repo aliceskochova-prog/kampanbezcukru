@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   CHECKLIST_ITEMS,
   defaultCampaign,
@@ -80,9 +82,44 @@ export default function CampaignManager() {
     if (!genBrief.product || !genBrief.usp) return;
     setGenerating(true);
 
-    // Placeholder: AI generation would go here via Lovable Cloud edge function
-    // For now, show alert that AI is not connected yet
-    alert("AI generátor zatím není připojen. Dodejte informace o klientovi a napojíme ho.");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-fan-texts", {
+        body: {
+          product: genBrief.product,
+          usp: genBrief.usp,
+          cta: genBrief.cta,
+          audience: genBrief.audience,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      const p = genBrief.product;
+      update(c => {
+        c.googleTexts[p] = {
+          shortHeadlines: data.google?.shortHeadlines || [],
+          longHeadlines: data.google?.longHeadlines || [],
+          descriptions: data.google?.descriptions || [],
+          extensions: data.google?.extensions || [],
+        };
+        c.sklikTexts[p] = {
+          headlines: data.sklik?.headlines || [],
+          descriptions: data.sklik?.descriptions || [],
+        };
+        c.metaTexts[p] = {
+          mainTextVisible: data.meta?.mainTextVisible || "",
+          mainTextHidden: data.meta?.mainTextHidden || "",
+          headline: data.meta?.headline || "",
+        };
+      });
+
+      toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
+    } catch (e: any) {
+      console.error("Generation error:", e);
+      toast.error(e.message || "Chyba při generování textů. Zkuste to znovu.");
+    }
+
     setGenerating(false);
   };
 
