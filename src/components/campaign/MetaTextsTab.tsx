@@ -4,6 +4,14 @@ interface MetaTextsTabProps {
   camp: Campaign;
   setMetaText: (product: string, field: string, val: string) => void;
 }
+
+function trimToLimit(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const trimmed = text.slice(0, max);
+  const lastSpace = trimmed.lastIndexOf(" ");
+  return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
+}
+
 const META_TEXT_HINTS = [
   { label: "Varianta 1 – delší", placeholder: "🌟 Hlavní hook v první větě (do 125 zn.)...\n\nPokračování – více info, příběh, důvody ke koupi..." },
   { label: "Varianta 2 – kratší", placeholder: "✨ Úderná krátká verze – jen to nejdůležitější..." },
@@ -28,8 +36,6 @@ export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
           <div key={p} className="bg-card rounded-xl border border-channel-meta/10 mb-5 overflow-hidden">
             <div className="bg-channel-meta text-accent-foreground px-4 py-2.5 font-bold text-sm">{p}</div>
             <div className="p-4">
-
-              {/* Hlavní texty – 5 variant */}
               <div className="mb-5">
                 <div className="text-xs font-bold text-channel-meta mb-1">✍️ HLAVNÍ TEXT – 5 variant</div>
                 <div className="text-[11px] text-muted-foreground mb-3">
@@ -65,31 +71,37 @@ export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
                   );
                 })}
               </div>
-
-              {/* Headliny – 5 variant */}
               <div>
                 <div className="text-xs font-bold text-channel-meta mb-2">🖼️ HEADLINE pod fotku – 5 variant (max 40 zn.)</div>
                 {META_HEADLINE_HINTS.map((hint, i) => {
                   const key = `headline_${i}`;
                   const val = mt[key] || "";
+                  const over = val.length > 40;
                   return (
-                    <div key={i} className="relative mb-2">
-                      <input
-                        value={val}
-                        onChange={e => setMetaText(p, key, e.target.value)}
-                        placeholder={hint.placeholder}
-                        className={`w-full px-2 py-1.5 pr-16 rounded border text-xs bg-card ${
-                          val.length > 40 ? "border-destructive" : "border-input"
-                        }`}
-                      />
-                      <span className="absolute right-1.5 top-1.5">
-                        <CharCount value={val} max={40} warn={35} />
-                      </span>
+                    <div key={i} className="flex items-center gap-1 mb-2">
+                      <div className="relative flex-1">
+                        <input
+                          value={val}
+                          onChange={e => setMetaText(p, key, e.target.value)}
+                          placeholder={hint.placeholder}
+                          className={`w-full px-2 py-1.5 pr-16 rounded border text-xs bg-card ${
+                            over ? "border-destructive" : "border-input"
+                          }`}
+                        />
+                        <span className="absolute right-1.5 top-1.5">
+                          <CharCount value={val} max={40} warn={35} />
+                        </span>
+                      </div>
+                      {over && (
+                        <button
+                          onClick={() => setMetaText(p, key, trimToLimit(val, 40))}
+                          className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap"
+                        >✂️</button>
+                      )}
                     </div>
                   );
                 })}
               </div>
-
               <div className="mt-4 bg-channel-meta-light rounded-lg px-3.5 py-2.5 text-xs text-channel-meta border border-channel-meta/20">
                 📐 Vizuály: Příspěvek 1080×1080 px · Story/Reels 1080×1920 px · XML Feed do FB Katalogu
               </div>
