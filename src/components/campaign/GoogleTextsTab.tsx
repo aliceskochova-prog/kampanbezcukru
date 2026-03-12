@@ -8,6 +8,12 @@ interface GoogleTextsTabProps {
 function trimToLimit(text: string, max: number): string {
   if (text.length <= max) return text;
   const trimmed = text.slice(0, max);
+  const lastSentence = Math.max(
+    trimmed.lastIndexOf(". "),
+    trimmed.lastIndexOf("! "),
+    trimmed.lastIndexOf("? ")
+  );
+  if (lastSentence > 0) return trimmed.slice(0, lastSentence + 1);
   const lastSpace = trimmed.lastIndexOf(" ");
   return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
 }
