@@ -1,15 +1,12 @@
 import { VISUAL_ITEMS, type Campaign } from "@/lib/campaign-data";
-
 interface GrafikTabProps {
   camp: Campaign;
 }
-
 const chColor: Record<string, string> = {
   "Google Ads": "text-channel-google",
   "Sklik": "text-channel-sklik",
   "META": "text-channel-meta",
 };
-
 export function GrafikTab({ camp }: GrafikTabProps) {
   return (
     <div>
@@ -25,27 +22,23 @@ export function GrafikTab({ camp }: GrafikTabProps) {
           🖨️ Tisknout / PDF
         </button>
       </div>
-
       {camp.products.map(p => {
         const gt = camp.googleTexts[p] || {};
         const mt = camp.metaTexts[p] || {};
         const cl = camp.checklist[p] || {};
-
         return (
           <div key={p} className="bg-card rounded-xl border border-border mb-6 overflow-hidden">
             <div className="bg-fan-navy text-primary-foreground px-4 py-2.5 font-bold text-[15px]">{p}</div>
-
             <div className="grid grid-cols-2 border-b border-border">
               {/* META texts */}
               <div className="p-4 border-r border-border">
                 <div className="text-xs font-bold text-channel-meta mb-2.5 uppercase">META Ads – texty do vizuálu</div>
                 <ReadOnlyField label="Headline pod fotku (max 40 zn.)" value={mt.headline} highlight />
-                <ReadOnlyField label="Hlavní text – viditelná část (~125 zn.)" value={mt.mainTextVisible} highlight />
-                {mt.mainTextHidden && (
-                  <ReadOnlyField label="Pokračování textu (skryté)" value={mt.mainTextHidden} />
+                <ReadOnlyField label="Hlavní text – prvních 125 zn. (hook)" value={mt.mainTextVisible ? mt.mainTextVisible.slice(0, 125) + (mt.mainTextVisible.length > 125 ? "…" : "") : ""} highlight />
+                {mt.mainTextVisible && mt.mainTextVisible.length > 125 && (
+                  <ReadOnlyField label="Pokračování textu (skryté)" value={mt.mainTextVisible.slice(125)} />
                 )}
               </div>
-
               {/* Google headlines */}
               <div className="p-4">
                 <div className="text-xs font-bold text-channel-google mb-2.5 uppercase">Google Ads – nadpisy a hesla</div>
@@ -72,7 +65,32 @@ export function GrafikTab({ camp }: GrafikTabProps) {
               </div>
             </div>
 
-            {/* Visual formats */}
+            {/* Google Ads PMAX formáty */}
+            <div className="p-4 border-b border-border">
+              <div className="text-xs font-bold text-channel-google mb-3 uppercase">Google Ads PMAX – grafické formáty</div>
+              <div className="text-[11px] text-muted-foreground mb-3">3 varianty: 1× bez textu · 1× s textem · 1× jen logo (průhledné pozadí). Lze použít až 20 obrázků.</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-channel-google-light rounded-lg p-3 border border-channel-google/20">
+                  <div className="text-xs font-bold text-channel-google mb-2">📐 Formáty obrázků</div>
+                  <div className="space-y-1 text-xs text-foreground">
+                    <div className="flex justify-between"><span>Landscape 1,91:1</span><span className="text-muted-foreground">1200×628 px</span></div>
+                    <div className="flex justify-between"><span>Čtverec 1:1</span><span className="text-muted-foreground">1200×1200 px</span></div>
+                    <div className="flex justify-between"><span>Portrét 4:5</span><span className="text-muted-foreground">960×1200 px</span></div>
+                    <div className="flex justify-between"><span>Story 9:16</span><span className="text-muted-foreground">1080×1920 px</span></div>
+                  </div>
+                </div>
+                <div className="bg-channel-google-light rounded-lg p-3 border border-channel-google/20">
+                  <div className="text-xs font-bold text-channel-google mb-2">🏷️ Logo formáty</div>
+                  <div className="space-y-1 text-xs text-foreground">
+                    <div className="flex justify-between"><span>Čtverec 1:1</span><span className="text-muted-foreground">průhledné pozadí</span></div>
+                    <div className="flex justify-between"><span>Landscape 4:1</span><span className="text-muted-foreground">průhledné pozadí</span></div>
+                  </div>
+                  <div className="mt-2 text-[11px] text-muted-foreground">⚠️ Logo musí mít průhledné pozadí (.PNG)</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual formats checklist */}
             <div className="p-4">
               <div className="text-xs font-bold text-foreground/70 mb-2.5 uppercase">Grafické formáty – stav podkladů</div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -82,7 +100,6 @@ export function GrafikTab({ camp }: GrafikTabProps) {
                     : status === "⏳ Čeká" ? "bg-status-pending-bg border-status-pending/30"
                     : status === "❌ Chybí" ? "bg-status-missing-bg border-status-missing/30"
                     : "bg-muted/30 border-border";
-
                   return (
                     <div key={item.label} className={`${bgClass} border rounded-md px-2.5 py-2 flex justify-between items-start`}>
                       <div>
@@ -102,7 +119,6 @@ export function GrafikTab({ camp }: GrafikTabProps) {
     </div>
   );
 }
-
 function ReadOnlyField({ label, value, highlight }: { label: string; value?: string; highlight?: boolean }) {
   return (
     <div className="mb-2.5">
