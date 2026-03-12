@@ -8,6 +8,12 @@ interface SklikTextsTabProps {
 function trimToLimit(text: string, max: number): string {
   if (text.length <= max) return text;
   const trimmed = text.slice(0, max);
+  const lastSentence = Math.max(
+    trimmed.lastIndexOf(". "),
+    trimmed.lastIndexOf("! "),
+    trimmed.lastIndexOf("? ")
+  );
+  if (lastSentence > 0) return trimmed.slice(0, lastSentence + 1);
   const lastSpace = trimmed.lastIndexOf(" ");
   return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
 }
@@ -133,7 +139,7 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                   })}
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
+                  <div className="text-xs font-semibond text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
                   {Array.from({ length: 2 }, (_, i) => {
                     const val = st.displayDescriptions?.[i] || "";
                     const over = val.length > 90;
