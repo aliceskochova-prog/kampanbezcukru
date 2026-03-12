@@ -59,7 +59,7 @@ export default function CampaignManager() {
   const setMetaText = (product: string, field: string, val: string) =>
     update(c => {
       if (!c.metaTexts[product]) c.metaTexts[product] = {};
-      c.metaTexts[product][field] = val;
+      (c.metaTexts[product] as any)[field] = val;
     });
   const completionFor = (product: string) => {
     const done = CHECKLIST_ITEMS.filter(i => camp.checklist[product]?.[i.label] === "✅ Hotovo").length;
@@ -93,10 +93,9 @@ export default function CampaignManager() {
           headlines: data.sklik?.headlines || [],
           descriptions: data.sklik?.descriptions || [],
         };
-        c.metaTexts[p] = {
-          mainTextVisible: data.meta?.mainTextVisible || "",
-          mainTextHidden: data.meta?.mainTextHidden || "",
-          headline: data.meta?.headline || "",
+        (c.metaTexts[p] as any) = {
+          mainText_0: data.meta?.mainTextVisible || "",
+          headline_0: data.meta?.headline || "",
         };
       });
       toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
@@ -116,12 +115,16 @@ export default function CampaignManager() {
       (g.descriptions || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tPopis\t${i+1}\t${t}`));
       (g.extensions || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tRozšíření\t${i+1}\t${t}`));
       const s = camp.sklikTexts[p] || {};
-      (s.headlines || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tNadpis\t${i+1}\t${t}`));
-      (s.descriptions || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tPopis\t${i+1}\t${t}`));
-      const m = camp.metaTexts[p] || {};
-      if (m.headline) rows.push(`META\t${p}\tNadpis\t1\t${m.headline}`);
-      if (m.mainTextVisible) rows.push(`META\t${p}\tHlavní text (viditelný)\t1\t${m.mainTextVisible}`);
-      if (m.mainTextHidden) rows.push(`META\t${p}\tHlavní text (skrytý)\t1\t${m.mainTextHidden}`);
+      (s.headlines || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tSearch titulek\t${i+1}\t${t}`));
+      (s.descriptions || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tSearch popisek\t${i+1}\t${t}`));
+      (s.displayShortTitles || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay krátký titulek\t${i+1}\t${t}`));
+      (s.displayLongTitles || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay dlouhý titulek\t${i+1}\t${t}`));
+      (s.displayDescriptions || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay popisek\t${i+1}\t${t}`));
+      const m = (camp.metaTexts[p] as any) || {};
+      for (let i = 0; i < 5; i++) {
+        if (m[`mainText_${i}`]) rows.push(`META\t${p}\tHlavní text\t${i+1}\t${m[`mainText_${i}`]}`);
+        if (m[`headline_${i}`]) rows.push(`META\t${p}\tHeadline\t${i+1}\t${m[`headline_${i}`]}`);
+      }
     });
     const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
