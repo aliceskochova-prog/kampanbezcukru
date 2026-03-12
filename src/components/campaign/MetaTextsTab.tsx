@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CharCount } from "./CharCount";
 import { type Campaign } from "@/lib/campaign-data";
 interface MetaTextsTabProps {
@@ -34,13 +35,82 @@ const META_HEADLINE_HINTS = [
 ];
 
 export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
+  const [generatingVariants, setGeneratingVariants] = useState<Record<string, boolean>>({});
+
+  const generateVariants = async (product: string) => {
+    const mt = (camp.metaTexts[product] as any) || {};
+    const baseText = mt["mainText_0"] || "";
+    const baseHeadline = mt["headline_0"] || "";
+    if (!baseText) {
+      alert("Nejdřív vygeneruj texty v záložce Generátor textů.");
+      return;
+    }
+    setGeneratingVariants(prev => ({ ...prev, [product]: true }));
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{
+            role: "user",
+            content: `Jsi expert na performance marketing pro FAN Sladidla. 
+Na základě tohoto META textu vytvoř 4 další varianty (varianty 2-5).
+Používej emoji. NIKDY nepoužívej slova "zdravě", "zdravější", "tradiční", "tradičně".
+
+Varianta 1 (základ): "${baseText}"
+Headline 1 (základ): "${baseHeadline}"
+
+Pravidla:
+- Varianta 2: kratší verze, max 150 znaků celkem
+- Varianta 3: delší, emotivní příběh zákazníka, 200-350 znaků
+- Varianta 4: kratší, přímá výzva k akci, max 150 znaků
+- Varianta 5: delší, začni otázkou nebo faktem, 200-350 znaků
+- Každý headline max 40 znaků
+- Prvních 125 znaků každého textu musí být hook
+
+Vrať POUZE platný JSON bez markdown:
+{
+  "texts": ["varianta2", "varianta3", "varianta4", "varianta5"],
+  "headlines": ["headline2", "headline3", "headline4", "headline5"]
+}`
+          }]
+        })
+      });
+      const data = await response.json();
+      const content = data.content?.[0]?.text || "";
+      const clean = content.replace(/```json\s*|```\s*/g, "").trim();
+      const parsed = JSON.parse(clean);
+      (parsed.texts || []).forEach((t: string, i: number) => {
+        setMetaText(product, `mainText_${i + 1}`, t);
+      });
+      (parsed.headlines || []).forEach((t: string, i: number) => {
+        setMetaText(product, `headline_${i + 1}`, t);
+      });
+    } catch (e) {
+      console.error("Variant generation error:", e);
+      alert("Chyba při generování variant. Zkuste to znovu.");
+    }
+    setGeneratingVariants(prev => ({ ...prev, [product]: false }));
+  };
+
   return (
     <div>
       {camp.products.map(p => {
         const mt = (camp.metaTexts[p] as any) || {};
         return (
           <div key={p} className="bg-card rounded-xl border border-channel-meta/10 mb-5 overflow-hidden">
-            <div className="bg-channel-meta text-accent-foreground px-4 py-2.5 font-bold text-sm">{p}</div>
+            <div className="bg-channel-meta text-accent-foreground px-4 py-2.5 font-bold text-sm flex items-center justify-between">
+              <span>{p}</span>
+              <button
+                onClick={() => generateVariants(p)}
+                disabled={generatingVariants[p]}
+                className="text-xs bg-white/20 hover:bg-white/30 text-white border-none rounded px-3 py-1 cursor-pointer font-semibold disabled:opacity-50"
+              >
+                {generatingVariants[p] ? "⏳ Generuji..." : "✨ Vytvořit varianty 2–5"}
+              </button>
+            </div>
             <div className="p-4">
               <div className="mb-5">
                 <div className="text-xs font-bold text-channel-meta mb-1">✍️ HLAVNÍ TEXT – 5 variant</div>
