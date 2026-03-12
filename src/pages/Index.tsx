@@ -93,10 +93,14 @@ export default function CampaignManager() {
           headlines: data.sklik?.headlines || [],
           descriptions: data.sklik?.descriptions || [],
         };
-        (c.metaTexts[p] as any) = {
-          mainText_0: data.meta?.mainTextVisible || "",
-          headline_0: data.meta?.headline || "",
-        };
+        const metaTexts: Record<string, string> = {};
+        (data.meta?.mainTexts || []).forEach((t: string, i: number) => {
+          metaTexts[`mainText_${i}`] = t;
+        });
+        (data.meta?.headlines || []).forEach((t: string, i: number) => {
+          metaTexts[`headline_${i}`] = t;
+        });
+        (c.metaTexts[p] as any) = metaTexts;
       });
       toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
     } catch (e: any) {
