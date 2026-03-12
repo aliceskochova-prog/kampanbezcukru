@@ -57,6 +57,28 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        fan: {
+          navy: "hsl(var(--fan-navy))",
+          "navy-light": "hsl(var(--fan-navy-light))",
+          blue: "hsl(var(--fan-blue))",
+          "blue-light": "hsl(var(--fan-blue-light))",
+        },
+        channel: {
+          google: "hsl(var(--channel-google))",
+          "google-light": "hsl(var(--channel-google-light))",
+          sklik: "hsl(var(--channel-sklik))",
+          "sklik-light": "hsl(var(--channel-sklik-light))",
+          meta: "hsl(var(--channel-meta))",
+          "meta-light": "hsl(var(--channel-meta-light))",
+        },
+        status: {
+          done: "hsl(var(--status-done))",
+          "done-bg": "hsl(var(--status-done-bg))",
+          pending: "hsl(var(--status-pending))",
+          "pending-bg": "hsl(var(--status-pending-bg))",
+          missing: "hsl(var(--status-missing))",
+          "missing-bg": "hsl(var(--status-missing-bg))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
