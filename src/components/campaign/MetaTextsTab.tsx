@@ -1,56 +1,57 @@
 import { CharCount } from "./CharCount";
 import { type Campaign } from "@/lib/campaign-data";
-
 interface MetaTextsTabProps {
   camp: Campaign;
   setMetaText: (product: string, field: string, val: string) => void;
 }
-
 export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
   return (
     <div>
       {camp.products.map(p => {
         const mt = camp.metaTexts[p] || {};
+        const fullText = mt.mainTextVisible || "";
         return (
           <div key={p} className="bg-card rounded-xl border border-channel-meta/10 mb-5 overflow-hidden">
             <div className="bg-channel-meta text-accent-foreground px-4 py-2.5 font-bold text-sm">{p}</div>
             <div className="p-4">
-              <div className="grid grid-cols-2 gap-4 mb-3.5">
-                <div>
-                  <div className="text-xs font-bold text-channel-meta mb-1">HLAVNÍ TEXT – viditelná část (~125 zn.)</div>
-                  <div className="text-[11px] text-muted-foreground mb-1">To nejdůležitější musí být hned v prvních 2 větách</div>
-                  <textarea
-                    value={mt.mainTextVisible || ""}
-                    onChange={e => setMetaText(p, "mainTextVisible", e.target.value)}
-                    placeholder="Hlavní sdělení – první 2 věty"
-                    rows={4}
-                    className={`w-full px-2 py-1.5 rounded border text-xs bg-card resize-y ${
-                      (mt.mainTextVisible || "").length > 125 ? "border-destructive" : "border-input"
-                    }`}
-                  />
-                  <div className="text-right">
-                    <CharCount value={mt.mainTextVisible} max={125} warn={110} />
+
+              {/* Hlavní text – spojené okno */}
+              <div className="mb-4">
+                <div className="text-xs font-bold text-channel-meta mb-1">✍️ HLAVNÍ TEXT</div>
+                <div className="text-[11px] text-muted-foreground mb-2">
+                  📌 Prvních ~125 znaků (první 2 věty) musí obsahovat hlavní sdělení – hook. Zbytek se skryje pod „Zobrazit více". Používej emoji! 🎯
+                </div>
+                <textarea
+                  value={fullText}
+                  onChange={e => setMetaText(p, "mainTextVisible", e.target.value)}
+                  placeholder="✨ Hlavní hook v prvních 2 větách...&#10;&#10;Pokračování textu pod Zobrazit více..."
+                  rows={8}
+                  className="w-full px-2 py-1.5 rounded border border-input text-xs bg-card resize-y"
+                />
+                <div className="flex justify-between items-center mt-1">
+                  <span className={`text-[11px] font-semibold ${fullText.length >= 125 ? "text-status-done" : "text-channel-meta"}`}>
+                    {fullText.length < 125
+                      ? `⚠️ Prvních 125 znaků: ${fullText.length}/125`
+                      : `✅ Hook splněn · celkem ${fullText.length} zn.`}
+                  </span>
+                </div>
+                {/* Preview prvních 125 znaků */}
+                {fullText.length > 0 && (
+                  <div className="mt-2 bg-channel-meta-light border border-channel-meta/20 rounded-md px-3 py-2">
+                    <div className="text-[11px] text-channel-meta font-bold mb-1">👁️ Náhled viditelné části (prvních 125 zn.):</div>
+                    <div className="text-xs text-foreground">{fullText.slice(0, 125)}{fullText.length > 125 ? "…" : ""}</div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-channel-meta mb-1">POKRAČOVÁNÍ TEXTU – skryté</div>
-                  <div className="text-[11px] text-muted-foreground mb-1">Libovolná délka, pod "Zobrazit více"</div>
-                  <textarea
-                    value={mt.mainTextHidden || ""}
-                    onChange={e => setMetaText(p, "mainTextHidden", e.target.value)}
-                    placeholder="Pokračování textu..."
-                    rows={4}
-                    className="w-full px-2 py-1.5 rounded border border-input text-xs bg-card resize-y"
-                  />
-                </div>
+                )}
               </div>
+
+              {/* Headline */}
               <div className="max-w-[360px]">
-                <div className="text-xs font-bold text-channel-meta mb-1.5">HEADLINE pod fotku – max 40 zn.</div>
+                <div className="text-xs font-bold text-channel-meta mb-1.5">🖼️ HEADLINE pod fotku – max 40 zn.</div>
                 <div className="relative">
                   <input
                     value={mt.headline || ""}
                     onChange={e => setMetaText(p, "headline", e.target.value)}
-                    placeholder="Krátký úderný nadpis pod fotku"
+                    placeholder="Krátký úderný nadpis pod fotku 🎯"
                     className={`w-full px-2 py-1.5 pr-12 rounded border text-xs bg-card ${
                       (mt.headline || "").length > 40 ? "border-destructive" : "border-input"
                     }`}
@@ -60,6 +61,7 @@ export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
                   </span>
                 </div>
               </div>
+
               <div className="mt-3.5 bg-channel-meta-light rounded-lg px-3.5 py-2.5 text-xs text-channel-meta border border-channel-meta/20">
                 📐 Vizuály: Příspěvek 1080×1080 px · Story/Reels 1080×1920 px · XML Feed do FB Katalogu
               </div>
