@@ -94,12 +94,20 @@ export default function CampaignManager() {
           descriptions: data.sklik?.descriptions || [],
         };
         const metaTexts: Record<string, string> = {};
-        (data.meta?.mainTexts || []).forEach((t: string, i: number) => {
-          metaTexts[`mainText_${i}`] = t;
-        });
-        (data.meta?.headlines || []).forEach((t: string, i: number) => {
-          metaTexts[`headline_${i}`] = t;
-        });
+        if (data.meta?.mainTexts && Array.isArray(data.meta.mainTexts)) {
+          data.meta.mainTexts.forEach((t: string, i: number) => {
+            metaTexts[`mainText_${i}`] = t;
+          });
+        } else if (data.meta?.mainTextVisible) {
+          metaTexts[`mainText_0`] = data.meta.mainTextVisible + (data.meta.mainTextHidden ? "\n\n" + data.meta.mainTextHidden : "");
+        }
+        if (data.meta?.headlines && Array.isArray(data.meta.headlines)) {
+          data.meta.headlines.forEach((t: string, i: number) => {
+            metaTexts[`headline_${i}`] = t;
+          });
+        } else if (data.meta?.headline) {
+          metaTexts[`headline_0`] = data.meta.headline;
+        }
         (c.metaTexts[p] as any) = metaTexts;
       });
       toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
