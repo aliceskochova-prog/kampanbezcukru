@@ -1,9 +1,15 @@
 import { CharCount } from "./CharCount";
 import { type Campaign } from "@/lib/campaign-data";
-
 interface GoogleTextsTabProps {
   camp: Campaign;
   setGoogleText: (product: string, field: string, idx: number, val: string) => void;
+}
+
+function trimToLimit(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const trimmed = text.slice(0, max);
+  const lastSpace = trimmed.lastIndexOf(" ");
+  return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
 }
 
 export function GoogleTextsTab({ camp, setGoogleText }: GoogleTextsTabProps) {
@@ -76,22 +82,40 @@ function Section({ title, color, children }: { title: string; color: string; chi
   );
 }
 
+function trimToLimit(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const trimmed = text.slice(0, max);
+  const lastSpace = trimmed.lastIndexOf(" ");
+  return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
+}
+
 function FieldWithCount({ value, onChange, placeholder, max, warn }: {
   value: string; onChange: (v: string) => void; placeholder: string; max: number; warn: number;
 }) {
+  const over = value.length > max;
   return (
-    <div className="relative mb-1">
-      <input
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`w-full px-2 py-1 pr-11 rounded border text-xs bg-card ${
-          value.length > max ? "border-destructive" : "border-input"
-        }`}
-      />
-      <span className="absolute right-1.5 top-1.5">
-        <CharCount value={value} max={max} warn={warn} />
-      </span>
+    <div className="mb-1">
+      <div className="flex items-center gap-1">
+        <div className="relative flex-1">
+          <input
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            className={`w-full px-2 py-1 pr-11 rounded border text-xs bg-card ${
+              over ? "border-destructive" : "border-input"
+            }`}
+          />
+          <span className="absolute right-1.5 top-1.5">
+            <CharCount value={value} max={max} warn={warn} />
+          </span>
+        </div>
+        {over && (
+          <button
+            onClick={() => onChange(trimToLimit(value, max))}
+            className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap"
+          >✂️</button>
+        )}
+      </div>
     </div>
   );
 }
