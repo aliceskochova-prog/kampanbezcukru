@@ -186,6 +186,11 @@ export default function CampaignManager() {
         (c.metaTexts[p] as any) = metaTexts;
       });
       toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
+      // Save immediately after generation
+      setTimeout(() => {
+        const currentCamp = campaigns[activeIdx];
+        if (currentCamp) saveCampaign(currentCamp);
+      }, 100);
     } catch (e: any) {
       console.error("Generation error:", e);
       toast.error(e.message || "Chyba při generování textů. Zkuste to znovu.");
