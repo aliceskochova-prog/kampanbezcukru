@@ -92,6 +92,9 @@ export default function CampaignManager() {
         c.sklikTexts[p] = {
           headlines: data.sklik?.headlines || [],
           descriptions: data.sklik?.descriptions || [],
+          displayShortTitles: data.sklik?.displayShortTitles || [],
+          displayLongTitles: data.sklik?.displayLongTitles || [],
+          displayDescriptions: data.sklik?.displayDescriptions || [],
         };
         const metaTexts: Record<string, string> = {};
         if (data.meta?.mainTexts && Array.isArray(data.meta.mainTexts)) {
