@@ -288,6 +288,13 @@ export default function CampaignManager() {
   };
 
   const pct = overallPct();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-lg">⏳ Načítám kampaně...</div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-fan-navy text-primary-foreground px-6 py-4 flex items-center justify-between no-print">
