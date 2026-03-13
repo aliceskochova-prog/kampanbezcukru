@@ -13,6 +13,8 @@ import { GoogleTextsTab } from "@/components/campaign/GoogleTextsTab";
 import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
 import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
+import { exportToExcel, type PPCRow } from "@/utils/exportToExcel";
+
 const TABS = [
   { key: "checklist", label: "✅ Checklist" },
   { key: "generate", label: "✨ Generátor textů" },
@@ -34,6 +36,13 @@ function dbToCampaign(row: any): Campaign {
   };
 }
 
+function getStatus(len: number, max: number): string {
+  if (len === 0) return "";
+  if (len > max) return "❌ Přes limit";
+  if (len >= max - 4) return "⚠️ Na hraně";
+  return "✅ OK";
+}
+
 export default function CampaignManager() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -45,7 +54,6 @@ export default function CampaignManager() {
   const [genBrief, setGenBrief] = useState<GenBrief>({ product: "", usp: "", cta: "", audience: "" });
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
-  // Load campaigns from DB
   useEffect(() => {
     const load = async () => {
       const { data, error } = await supabase
@@ -58,7 +66,6 @@ export default function CampaignManager() {
       } else if (data && data.length > 0) {
         setCampaigns(data.map(dbToCampaign));
       } else {
-        // First time – create default campaign in DB
         const def = defaultCampaign("FAN Sladidla – Performance Q2");
         const { data: inserted, error: insertErr } = await supabase
           .from("campaigns")
@@ -83,7 +90,6 @@ export default function CampaignManager() {
     load();
   }, []);
 
-  // Auto-save with debounce
   const saveCampaign = useCallback(async (camp: Campaign) => {
     if (!camp.id) return;
     await supabase
@@ -105,40 +111,46 @@ export default function CampaignManager() {
     setCampaigns(prev => {
       const next = prev.map((c, i) => (i === activeIdx ? { ...c } : c));
       fn(next[activeIdx]);
-      // Debounced save
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
       saveTimeout.current = setTimeout(() => saveCampaign(next[activeIdx]), 1000);
       return next;
     });
   };
+
   const setChecklistStatus = (product: string, itemLabel: string, val: string) =>
     update(c => {
       if (!c.checklist[product]) c.checklist[product] = {};
       c.checklist[product][itemLabel] = val;
     });
+
   const setGoogleText = (product: string, field: string, idx: number, val: string) =>
     update(c => {
       if (!c.googleTexts[product]) c.googleTexts[product] = {};
       if (!c.googleTexts[product][field]) c.googleTexts[product][field] = [];
       c.googleTexts[product][field][idx] = val;
     });
+
   const setSklikText = (product: string, field: string, idx: number, val: string) =>
     update(c => {
       if (!c.sklikTexts[product]) c.sklikTexts[product] = {};
       if (!c.sklikTexts[product][field]) c.sklikTexts[product][field] = [];
       c.sklikTexts[product][field][idx] = val;
     });
+
   const setMetaText = (product: string, field: string, val: string) =>
     update(c => {
       if (!c.metaTexts[product]) c.metaTexts[product] = {};
       (c.metaTexts[product] as any)[field] = val;
     });
+
   const completionFor = (product: string) => {
     const done = CHECKLIST_ITEMS.filter(i => camp.checklist[product]?.[i.label] === "✅ Hotovo").length;
     return Math.round((done / CHECKLIST_ITEMS.length) * 100);
   };
+
   const overallPct = () =>
     Math.round(camp.products.reduce((s, p) => s + completionFor(p), 0) / camp.products.length);
+
   const generateTexts = async () => {
     if (!genBrief.product || !genBrief.usp) return;
     setGenerating(true);
@@ -186,7 +198,6 @@ export default function CampaignManager() {
         (c.metaTexts[p] as any) = metaTexts;
       });
       toast.success(`Texty pro "${p}" vygenerovány! Zkontroluj záložky Google, Sklik a META.`);
-      // Save immediately after generation
       setTimeout(() => {
         const currentCamp = campaigns[activeIdx];
         if (currentCamp) saveCampaign(currentCamp);
@@ -198,101 +209,73 @@ export default function CampaignManager() {
     setGenerating(false);
   };
 
-  const exportToCSV = () => {
-    const rows: string[] = [];
+  const handleExport = () => {
+    const rows: PPCRow[] = [];
+
     camp.products.forEach(p => {
       const g = camp.googleTexts[p] || {};
       const s = camp.sklikTexts[p] || {};
       const m = (camp.metaTexts[p] as any) || {};
-      const hasAny = Object.keys(g).length > 0 || Object.keys(s).length > 0 || Object.keys(m).length > 0;
-      if (!hasAny) return;
 
-      rows.push(`═══════════════════════════════════════`);
-      rows.push(`PRODUKT: ${p}`);
-      rows.push(`═══════════════════════════════════════`);
-      rows.push("");
-
-      // Google Ads
-      if (Object.keys(g).length > 0) {
-        rows.push(`--- GOOGLE ADS ---`);
-        if ((g.shortHeadlines || []).some(Boolean)) {
-          rows.push(`Krátké nadpisy (max 30 zn.):`);
-          (g.shortHeadlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((g.longHeadlines || []).some(Boolean)) {
-          rows.push(`Dlouhé nadpisy (max 90 zn.):`);
-          (g.longHeadlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((g.descriptions || []).some(Boolean)) {
-          rows.push(`Popisy (max 90 zn.):`);
-          (g.descriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((g.extensions || []).some(Boolean)) {
-          rows.push(`Rozšíření / hesla (max 25 zn.):`);
-          (g.extensions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        rows.push("");
+      (g.shortHeadlines || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Krátký nadpis", cislo: i + 1, text, znaku: text.length, limit: 30, status: getStatus(text.length, 30) });
+      });
+      (g.longHeadlines || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Dlouhý nadpis", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+      });
+      (g.descriptions || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Popis", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+      });
+      (g.extensions || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Rozšíření", cislo: i + 1, text, znaku: text.length, limit: 25, status: getStatus(text.length, 25) });
+      });
+      (s.headlines || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search titulek", cislo: i + 1, text, znaku: text.length, limit: 30, status: getStatus(text.length, 30) });
+      });
+      (s.descriptions || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search popisek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+      });
+      (s.displayShortTitles || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display krátký titulek", cislo: i + 1, text, znaku: text.length, limit: 25, status: getStatus(text.length, 25) });
+      });
+      (s.displayLongTitles || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display dlouhý titulek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+      });
+      (s.displayDescriptions || []).forEach((text: string, i: number) => {
+        if (!text) return;
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display popisek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+      });
+      for (let i = 0; i < 5; i++) {
+        const text = m[`mainText_${i}`];
+        if (!text) continue;
+        rows.push({ platforma: "META", produkt: p, typTextu: "Hlavní text", cislo: i + 1, text, znaku: text.length, limit: 0, status: "✅ OK" });
       }
-
-      // Sklik
-      if (Object.keys(s).length > 0) {
-        rows.push(`--- SKLIK ---`);
-        if ((s.headlines || []).some(Boolean)) {
-          rows.push(`Search titulky (max 30 zn.):`);
-          (s.headlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((s.descriptions || []).some(Boolean)) {
-          rows.push(`Search popisky (max 90 zn.):`);
-          (s.descriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((s.displayShortTitles || []).some(Boolean)) {
-          rows.push(`Display – krátký titulek (max 25 zn.):`);
-          (s.displayShortTitles || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((s.displayLongTitles || []).some(Boolean)) {
-          rows.push(`Display – dlouhý titulek (max 90 zn.):`);
-          (s.displayLongTitles || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        if ((s.displayDescriptions || []).some(Boolean)) {
-          rows.push(`Display – popisek (max 90 zn.):`);
-          (s.displayDescriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
-        }
-        rows.push("");
+      for (let i = 0; i < 5; i++) {
+        const text = m[`headline_${i}`];
+        if (!text) continue;
+        rows.push({ platforma: "META", produkt: p, typTextu: "Headline", cislo: i + 1, text, znaku: text.length, limit: 40, status: getStatus(text.length, 40) });
       }
-
-      // META
-      const hasMetaTexts = Array.from({length: 5}, (_, i) => m[`mainText_${i}`]).some(Boolean);
-      const hasMetaHeadlines = Array.from({length: 5}, (_, i) => m[`headline_${i}`]).some(Boolean);
-      if (hasMetaTexts || hasMetaHeadlines) {
-        rows.push(`--- META ADS ---`);
-        if (hasMetaTexts) {
-          rows.push(`Hlavní texty:`);
-          for (let i = 0; i < 5; i++) {
-            if (m[`mainText_${i}`]) rows.push(`  Varianta ${i+1}: ${m[`mainText_${i}`]}`);
-          }
-        }
-        if (hasMetaHeadlines) {
-          rows.push(`Headliny (max 40 zn.):`);
-          for (let i = 0; i < 5; i++) {
-            if (m[`headline_${i}`]) rows.push(`  ${i+1}. ${m[`headline_${i}`]}`);
-          }
-        }
-        rows.push("");
-      }
-
-      rows.push("");
     });
-    const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/plain;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${camp.name}_texty.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Export dokončen! Soubor byl stažen.");
+
+    if (rows.length === 0) {
+      toast.error("Žádné texty k exportu. Nejdřív vygeneruj texty v záložce Generátor.");
+      return;
+    }
+
+    exportToExcel(rows, camp.name.replace(/[^a-zA-Z0-9_\-]/g, "_"));
+    toast.success("Export dokončen! Soubor .xlsx byl stažen.");
   };
 
   const pct = overallPct();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -300,6 +283,7 @@ export default function CampaignManager() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-fan-navy text-primary-foreground px-6 py-4 flex items-center justify-between no-print">
@@ -369,10 +353,10 @@ export default function CampaignManager() {
             </button>
           )}
           <button
-            onClick={exportToCSV}
+            onClick={handleExport}
             className="bg-green-600 hover:bg-green-500 text-white border-none rounded-md px-3 py-1.5 cursor-pointer text-sm font-semibold transition-colors"
           >
-            📥 Export do CSV
+            📥 Export do Excelu
           </button>
         </div>
       </div>
