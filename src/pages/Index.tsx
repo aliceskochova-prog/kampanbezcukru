@@ -92,6 +92,9 @@ export default function CampaignManager() {
         c.sklikTexts[p] = {
           headlines: data.sklik?.headlines || [],
           descriptions: data.sklik?.descriptions || [],
+          displayShortTitles: data.sklik?.displayShortTitles || [],
+          displayLongTitles: data.sklik?.displayLongTitles || [],
+          displayDescriptions: data.sklik?.displayDescriptions || [],
         };
         const metaTexts: Record<string, string> = {};
         if (data.meta?.mainTexts && Array.isArray(data.meta.mainTexts)) {
@@ -119,30 +122,94 @@ export default function CampaignManager() {
   };
 
   const exportToCSV = () => {
-    const rows: string[] = ["Platforma\tProdukt\tTyp textu\tČ.\tText"];
+    const rows: string[] = [];
     camp.products.forEach(p => {
       const g = camp.googleTexts[p] || {};
-      (g.shortHeadlines || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tKrátký nadpis\t${i+1}\t${t}`));
-      (g.longHeadlines || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tDlouhý nadpis\t${i+1}\t${t}`));
-      (g.descriptions || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tPopis\t${i+1}\t${t}`));
-      (g.extensions || []).forEach((t: string, i: number) => rows.push(`Google Ads\t${p}\tRozšíření\t${i+1}\t${t}`));
       const s = camp.sklikTexts[p] || {};
-      (s.headlines || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tSearch titulek\t${i+1}\t${t}`));
-      (s.descriptions || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tSearch popisek\t${i+1}\t${t}`));
-      (s.displayShortTitles || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay krátký titulek\t${i+1}\t${t}`));
-      (s.displayLongTitles || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay dlouhý titulek\t${i+1}\t${t}`));
-      (s.displayDescriptions || []).forEach((t: string, i: number) => rows.push(`Sklik\t${p}\tDisplay popisek\t${i+1}\t${t}`));
       const m = (camp.metaTexts[p] as any) || {};
-      for (let i = 0; i < 5; i++) {
-        if (m[`mainText_${i}`]) rows.push(`META\t${p}\tHlavní text\t${i+1}\t${m[`mainText_${i}`]}`);
-        if (m[`headline_${i}`]) rows.push(`META\t${p}\tHeadline\t${i+1}\t${m[`headline_${i}`]}`);
+      const hasAny = Object.keys(g).length > 0 || Object.keys(s).length > 0 || Object.keys(m).length > 0;
+      if (!hasAny) return;
+
+      rows.push(`═══════════════════════════════════════`);
+      rows.push(`PRODUKT: ${p}`);
+      rows.push(`═══════════════════════════════════════`);
+      rows.push("");
+
+      // Google Ads
+      if (Object.keys(g).length > 0) {
+        rows.push(`--- GOOGLE ADS ---`);
+        if ((g.shortHeadlines || []).some(Boolean)) {
+          rows.push(`Krátké nadpisy (max 30 zn.):`);
+          (g.shortHeadlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((g.longHeadlines || []).some(Boolean)) {
+          rows.push(`Dlouhé nadpisy (max 90 zn.):`);
+          (g.longHeadlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((g.descriptions || []).some(Boolean)) {
+          rows.push(`Popisy (max 90 zn.):`);
+          (g.descriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((g.extensions || []).some(Boolean)) {
+          rows.push(`Rozšíření / hesla (max 25 zn.):`);
+          (g.extensions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        rows.push("");
       }
+
+      // Sklik
+      if (Object.keys(s).length > 0) {
+        rows.push(`--- SKLIK ---`);
+        if ((s.headlines || []).some(Boolean)) {
+          rows.push(`Search titulky (max 30 zn.):`);
+          (s.headlines || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((s.descriptions || []).some(Boolean)) {
+          rows.push(`Search popisky (max 90 zn.):`);
+          (s.descriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((s.displayShortTitles || []).some(Boolean)) {
+          rows.push(`Display – krátký titulek (max 25 zn.):`);
+          (s.displayShortTitles || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((s.displayLongTitles || []).some(Boolean)) {
+          rows.push(`Display – dlouhý titulek (max 90 zn.):`);
+          (s.displayLongTitles || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        if ((s.displayDescriptions || []).some(Boolean)) {
+          rows.push(`Display – popisek (max 90 zn.):`);
+          (s.displayDescriptions || []).forEach((t: string, i: number) => { if (t) rows.push(`  ${i+1}. ${t}`); });
+        }
+        rows.push("");
+      }
+
+      // META
+      const hasMetaTexts = Array.from({length: 5}, (_, i) => m[`mainText_${i}`]).some(Boolean);
+      const hasMetaHeadlines = Array.from({length: 5}, (_, i) => m[`headline_${i}`]).some(Boolean);
+      if (hasMetaTexts || hasMetaHeadlines) {
+        rows.push(`--- META ADS ---`);
+        if (hasMetaTexts) {
+          rows.push(`Hlavní texty:`);
+          for (let i = 0; i < 5; i++) {
+            if (m[`mainText_${i}`]) rows.push(`  Varianta ${i+1}: ${m[`mainText_${i}`]}`);
+          }
+        }
+        if (hasMetaHeadlines) {
+          rows.push(`Headliny (max 40 zn.):`);
+          for (let i = 0; i < 5; i++) {
+            if (m[`headline_${i}`]) rows.push(`  ${i+1}. ${m[`headline_${i}`]}`);
+          }
+        }
+        rows.push("");
+      }
+
+      rows.push("");
     });
-    const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/plain;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${camp.name}_texty.csv`;
+    a.download = `${camp.name}_texty.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Export dokončen! Soubor byl stažen.");
