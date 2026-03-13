@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -21,21 +21,93 @@ const TABS = [
   { key: "meta", label: "META Ads texty" },
   { key: "grafik", label: "🎨 Pro grafika" },
 ];
+
+function dbToCampaign(row: any): Campaign {
+  return {
+    id: row.id,
+    name: row.name,
+    products: row.products || [],
+    checklist: row.checklist || {},
+    googleTexts: row.google_texts || {},
+    sklikTexts: row.sklik_texts || {},
+    metaTexts: row.meta_texts || {},
+  };
+}
+
 export default function CampaignManager() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([
-    defaultCampaign("FAN Sladidla – Performance Q2"),
-  ]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [activeTab, setActiveTab] = useState("checklist");
   const [newName, setNewName] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [genBrief, setGenBrief] = useState<GenBrief>({ product: "", usp: "", cta: "", audience: "" });
-  const camp = campaigns[activeIdx];
+  const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  // Load campaigns from DB
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) {
+        console.error("Load error:", error);
+        setCampaigns([defaultCampaign("FAN Sladidla – Performance Q2")]);
+      } else if (data && data.length > 0) {
+        setCampaigns(data.map(dbToCampaign));
+      } else {
+        // First time – create default campaign in DB
+        const def = defaultCampaign("FAN Sladidla – Performance Q2");
+        const { data: inserted, error: insertErr } = await supabase
+          .from("campaigns")
+          .insert({
+            name: def.name,
+            products: def.products,
+            checklist: def.checklist,
+            google_texts: def.googleTexts,
+            sklik_texts: def.sklikTexts,
+            meta_texts: def.metaTexts,
+          })
+          .select()
+          .single();
+        if (insertErr || !inserted) {
+          setCampaigns([def]);
+        } else {
+          setCampaigns([dbToCampaign(inserted)]);
+        }
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // Auto-save with debounce
+  const saveCampaign = useCallback(async (camp: Campaign) => {
+    if (!camp.id) return;
+    await supabase
+      .from("campaigns")
+      .update({
+        name: camp.name,
+        products: camp.products,
+        checklist: camp.checklist,
+        google_texts: camp.googleTexts,
+        sklik_texts: camp.sklikTexts,
+        meta_texts: camp.metaTexts,
+      })
+      .eq("id", camp.id);
+  }, []);
+
+  const camp = campaigns[activeIdx] || defaultCampaign("...");
+
   const update = (fn: (c: Campaign) => void) => {
     setCampaigns(prev => {
       const next = prev.map((c, i) => (i === activeIdx ? { ...c } : c));
       fn(next[activeIdx]);
+      // Debounced save
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => saveCampaign(next[activeIdx]), 1000);
       return next;
     });
   };

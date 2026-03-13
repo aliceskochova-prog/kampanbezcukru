@@ -63,6 +63,7 @@ export const STATUS_OPTIONS = ["–", "✅ Hotovo", "⏳ Čeká", "❌ Chybí"] 
 export type StatusOption = typeof STATUS_OPTIONS[number];
 
 export interface Campaign {
+  id?: string;
   name: string;
   products: string[];
   checklist: Record<string, Record<string, string>>;
