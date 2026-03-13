@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { CharCount } from "./CharCount";
 import { type Campaign } from "@/lib/campaign-data";
 interface MetaTextsTabProps {
