@@ -48,47 +48,25 @@ export function MetaTextsTab({ camp, setMetaText }: MetaTextsTabProps) {
     }
     setGeneratingVariants(prev => ({ ...prev, [product]: true }));
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{
-            role: "user",
-            content: `Jsi expert na performance marketing pro FAN Sladidla. 
-Na základě tohoto META textu vytvoř 4 další varianty (varianty 2-5).
-Používej emoji. NIKDY nepoužívej slova "zdravě", "zdravější", "tradiční", "tradičně".
-
-Varianta 1 (základ): "${baseText}"
-Headline 1 (základ): "${baseHeadline}"
-
-Pravidla:
-- Varianta 2: kratší verze, max 150 znaků celkem
-- Varianta 3: delší, emotivní příběh zákazníka, 200-350 znaků
-- Varianta 4: kratší, přímá výzva k akci, max 150 znaků
-- Varianta 5: delší, začni otázkou nebo faktem, 200-350 znaků
-- Každý headline max 40 znaků
-- Prvních 125 znaků každého textu musí být hook
-
-Vrať POUZE platný JSON bez markdown:
-{
-  "texts": ["varianta2", "varianta3", "varianta4", "varianta5"],
-  "headlines": ["headline2", "headline3", "headline4", "headline5"]
-}`
-          }]
-        })
+      const { data, error } = await supabase.functions.invoke("generate-fan-texts", {
+        body: {
+          product,
+          usp: `Na základě tohoto META textu vytvoř 4 další varianty (varianty 2-5). Varianta 1 (základ): "${baseText}". Headline 1: "${baseHeadline}". Varianta 2: kratší, max 150 zn. Varianta 3: delší emotivní příběh, 200-350 zn. Varianta 4: kratší výzva k akci, max 150 zn. Varianta 5: delší, začni otázkou, 200-350 zn. Používej emoji!`,
+          cta: "",
+          audience: "",
+        },
       });
-      const data = await response.json();
-      const content = data.content?.[0]?.text || "";
-      const clean = content.replace(/```json\s*|```\s*/g, "").trim();
-      const parsed = JSON.parse(clean);
-      (parsed.texts || []).forEach((t: string, i: number) => {
-        setMetaText(product, `mainText_${i + 1}`, t);
-      });
-      (parsed.headlines || []).forEach((t: string, i: number) => {
-        setMetaText(product, `headline_${i + 1}`, t);
-      });
+      if (error) throw error;
+      if (data?.meta?.mainTexts) {
+        data.meta.mainTexts.slice(1, 5).forEach((t: string, i: number) => {
+          setMetaText(product, `mainText_${i + 1}`, t);
+        });
+      }
+      if (data?.meta?.headlines) {
+        data.meta.headlines.slice(1, 5).forEach((t: string, i: number) => {
+          setMetaText(product, `headline_${i + 1}`, t);
+        });
+      }
     } catch (e) {
       console.error("Variant generation error:", e);
       alert("Chyba při generování variant. Zkuste to znovu.");
