@@ -325,9 +325,26 @@ export default function CampaignManager() {
                 className="px-2 py-1 rounded border border-primary-foreground/30 text-sm bg-fan-navy-light text-primary-foreground placeholder:text-primary-foreground/40"
               />
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (newName.trim()) {
-                    setCampaigns(p => [...p, defaultCampaign(newName.trim())]);
+                    const def = defaultCampaign(newName.trim());
+                    const { data: inserted, error } = await supabase
+                      .from("campaigns")
+                      .insert({
+                        name: def.name,
+                        products: def.products,
+                        checklist: def.checklist,
+                        google_texts: def.googleTexts,
+                        sklik_texts: def.sklikTexts,
+                        meta_texts: def.metaTexts,
+                      })
+                      .select()
+                      .single();
+                    if (error || !inserted) {
+                      toast.error("Chyba při vytváření kampaně");
+                      return;
+                    }
+                    setCampaigns(p => [...p, dbToCampaign(inserted)]);
                     setActiveIdx(campaigns.length);
                     setNewName("");
                     setShowNew(false);
