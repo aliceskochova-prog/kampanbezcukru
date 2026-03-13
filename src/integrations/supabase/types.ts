@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          checklist: Json
+          created_at: string
+          google_texts: Json
+          id: string
+          meta_texts: Json
+          name: string
+          products: Json
+          sklik_texts: Json
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          google_texts?: Json
+          id?: string
+          meta_texts?: Json
+          name: string
+          products?: Json
+          sklik_texts?: Json
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          google_texts?: Json
+          id?: string
+          meta_texts?: Json
+          name?: string
+          products?: Json
+          sklik_texts?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
