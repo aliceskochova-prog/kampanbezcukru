@@ -96,8 +96,11 @@ Vrať POUZE platný JSON objekt (bez markdown backticks, bez komentářů):
     "extensions": ["přesně 8 variant, každé MAX 25 znaků – hesla jako Česká výroba, Bez cukru, Doprava zdarma"]
   },
   "sklik": {
-    "headlines": ["přesně 4 varianty, každý MAX 30 znaků – úderné titulky"],
-    "descriptions": ["přesně 2 varianty, každý MAX 90 znaků – přesvědčivé popisy"]
+    "headlines": ["přesně 4 varianty, každý MAX 30 znaků – úderné titulky pro Search"],
+    "descriptions": ["přesně 2 varianty, každý MAX 90 znaků – přesvědčivé popisy pro Search"],
+    "displayShortTitles": ["přesně 2 varianty, každý MAX 25 znaků – krátké titulky pro Display/Kombinovanou reklamu"],
+    "displayLongTitles": ["přesně 2 varianty, každý MAX 90 znaků – dlouhé titulky pro Display/Kombinovanou reklamu"],
+    "displayDescriptions": ["přesně 2 varianty, každý MAX 90 znaků – popisky pro Display/Kombinovanou reklamu"]
   },
   "meta": {
     "mainTexts": [
