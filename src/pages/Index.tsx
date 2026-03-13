@@ -13,7 +13,49 @@ import { GoogleTextsTab } from "@/components/campaign/GoogleTextsTab";
 import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
 import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
-import { exportToExcel, type PPCRow } from "@/utils/exportToExcel";
+
+interface PPCRow {
+  platforma: string;
+  produkt: string;
+  typTextu: string;
+  cislo: number;
+  text: string;
+  znaku: number;
+  limit: number;
+  status: string;
+}
+
+function exportToExcel(data: PPCRow[], fileName = "FAN_Sladidla_PPC_Export"): void {
+  const header = ["Platforma", "Produkt", "Typ textu", "Č.", "Text", "Znaků", "Limit", "Status"];
+  const PLAT_ORDER = ["Google Ads", "Sklik", "META"];
+  const sorted = [...data].sort((a, b) => {
+    const pi = PLAT_ORDER.indexOf(a.platforma) - PLAT_ORDER.indexOf(b.platforma);
+    if (pi !== 0) return pi;
+    if (a.produkt < b.produkt) return -1;
+    if (a.produkt > b.produkt) return 1;
+    if (a.typTextu < b.typTextu) return -1;
+    if (a.typTextu > b.typTextu) return 1;
+    return a.cislo - b.cislo;
+  });
+  const rows = sorted.map(r => [r.platforma, r.produkt, r.typTextu, r.cislo, r.text, r.znaku, r.limit || "", r.status]);
+  const csvRows = [header, ...rows].map(row =>
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+  );
+  const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${fileName}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function getStatus(len: number, max: number): string {
+  if (len === 0) return "";
+  if (len > max) return "❌ Přes limit";
+  if (len >= max - 4) return "⚠️ Na hraně";
+  return "✅ OK";
+}
 
 const TABS = [
   { key: "checklist", label: "✅ Checklist" },
@@ -34,13 +76,6 @@ function dbToCampaign(row: any): Campaign {
     sklikTexts: row.sklik_texts || {},
     metaTexts: row.meta_texts || {},
   };
-}
-
-function getStatus(len: number, max: number): string {
-  if (len === 0) return "";
-  if (len > max) return "❌ Přes limit";
-  if (len >= max - 4) return "⚠️ Na hraně";
-  return "✅ OK";
 }
 
 export default function CampaignManager() {
@@ -211,12 +246,10 @@ export default function CampaignManager() {
 
   const handleExport = () => {
     const rows: PPCRow[] = [];
-
     camp.products.forEach(p => {
       const g = camp.googleTexts[p] || {};
       const s = camp.sklikTexts[p] || {};
       const m = (camp.metaTexts[p] as any) || {};
-
       (g.shortHeadlines || []).forEach((text: string, i: number) => {
         if (!text) return;
         rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Krátký nadpis", cislo: i + 1, text, znaku: text.length, limit: 30, status: getStatus(text.length, 30) });
@@ -264,14 +297,12 @@ export default function CampaignManager() {
         rows.push({ platforma: "META", produkt: p, typTextu: "Headline", cislo: i + 1, text, znaku: text.length, limit: 40, status: getStatus(text.length, 40) });
       }
     });
-
     if (rows.length === 0) {
       toast.error("Žádné texty k exportu. Nejdřív vygeneruj texty v záložce Generátor.");
       return;
     }
-
     exportToExcel(rows, camp.name.replace(/[^a-zA-Z0-9_\-]/g, "_"));
-    toast.success("Export dokončen! Soubor .xlsx byl stažen.");
+    toast.success("Export dokončen! Soubor byl stažen.");
   };
 
   const pct = overallPct();
