@@ -81,6 +81,22 @@ export const defaultCampaign = (name: string): Campaign => ({
   metaTexts: {},
 });
 
+export interface GenSettings {
+  clientName: string;
+  headlineCount: number;
+  headlineLength: number;
+  descriptionCount: number;
+  descriptionLength: number;
+}
+
+export const defaultGenSettings: GenSettings = {
+  clientName: "",
+  headlineCount: 15,
+  headlineLength: 30,
+  descriptionCount: 4,
+  descriptionLength: 90,
+};
+
 export interface GenBrief {
   product: string;
   usp: string;
