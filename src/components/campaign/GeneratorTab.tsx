@@ -1,4 +1,4 @@
-import { type Campaign, type GenBrief } from "@/lib/campaign-data";
+import { type Campaign, type GenBrief, type GenSettings } from "@/lib/campaign-data";
 
 interface GeneratorTabProps {
   camp: Campaign;
@@ -6,13 +6,19 @@ interface GeneratorTabProps {
   setGenBrief: React.Dispatch<React.SetStateAction<GenBrief>>;
   generating: boolean;
   onGenerate: () => void;
+  settings: GenSettings;
 }
 
-export function GeneratorTab({ camp, genBrief, setGenBrief, generating, onGenerate }: GeneratorTabProps) {
+export function GeneratorTab({ camp, genBrief, setGenBrief, generating, onGenerate, settings }: GeneratorTabProps) {
   return (
     <div className="max-w-[680px]">
       <div className="bg-card rounded-xl p-6 border border-border mb-5">
         <h2 className="font-bold text-base mb-4 text-foreground">✨ AI Generátor textů</h2>
+        {settings.clientName && (
+          <div className="text-xs text-muted-foreground mb-3 bg-muted/50 rounded px-3 py-1.5 border border-border">
+            Klient: <strong className="text-foreground">{settings.clientName}</strong> · Nadpisy: {settings.headlineCount}× max {settings.headlineLength} zn. · Popisy: {settings.descriptionCount}× max {settings.descriptionLength} zn. · Tón: {settings.tone}
+          </div>
+        )}
         <div className="grid gap-3.5">
           <div>
             <label className="text-sm font-semibold text-foreground/80 block mb-1">Produkt *</label>

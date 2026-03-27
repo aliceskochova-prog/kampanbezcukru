@@ -448,12 +448,22 @@ export default function CampaignManager() {
         ))}
       </div>
       <div className="p-6">
+        {activeTab === "settings" && (
+          <SettingsTab
+            settings={settings}
+            setSettings={setSettings}
+            onSaveDefault={() => {
+              saveSettings(settings);
+              toast.success("Nastavení uloženo jako výchozí.");
+            }}
+          />
+        )}
         {activeTab === "checklist" && <ChecklistTab camp={camp} setChecklistStatus={setChecklistStatus} />}
         {activeTab === "generate" && (
-          <GeneratorTab camp={camp} genBrief={genBrief} setGenBrief={setGenBrief} generating={generating} onGenerate={generateTexts} />
+          <GeneratorTab camp={camp} genBrief={genBrief} setGenBrief={setGenBrief} generating={generating} onGenerate={generateTexts} settings={settings} />
         )}
-        {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} />}
-        {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} />}
+        {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} settings={settings} />}
+        {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} settings={settings} />}
         {activeTab === "meta" && <MetaTextsTab camp={camp} setMetaText={setMetaText} />}
         {activeTab === "grafik" && <GrafikTab camp={camp} />}
       </div>

@@ -1,8 +1,10 @@
 import { CharCount } from "./CharCount";
-import { type Campaign } from "@/lib/campaign-data";
+import { type Campaign, type GenSettings } from "@/lib/campaign-data";
+
 interface GoogleTextsTabProps {
   camp: Campaign;
   setGoogleText: (product: string, field: string, idx: number, val: string) => void;
+  settings: GenSettings;
 }
 
 function trimToLimit(text: string, max: number): string {
@@ -18,7 +20,12 @@ function trimToLimit(text: string, max: number): string {
   return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
 }
 
-export function GoogleTextsTab({ camp, setGoogleText }: GoogleTextsTabProps) {
+export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTabProps) {
+  const hlMax = settings.headlineLength;
+  const hlCount = settings.headlineCount;
+  const descMax = settings.descriptionLength;
+  const descCount = settings.descriptionCount;
+
   return (
     <div>
       {camp.products.map(p => {
@@ -27,14 +34,14 @@ export function GoogleTextsTab({ camp, setGoogleText }: GoogleTextsTabProps) {
           <div key={p} className="bg-card rounded-xl border border-channel-google/10 mb-5 overflow-hidden">
             <div className="bg-channel-google text-primary-foreground px-4 py-2.5 font-bold text-sm">{p}</div>
             <div className="p-4">
-              <Section title="KRÁTKÉ NADPISY – max 30 zn. (15 variant)" color="text-channel-google">
+              <Section title={`KRÁTKÉ NADPISY – max ${hlMax} zn. (${hlCount} variant)`} color="text-channel-google">
                 <div className="grid grid-cols-3 gap-1.5">
-                  {Array.from({ length: 15 }, (_, i) => (
+                  {Array.from({ length: hlCount }, (_, i) => (
                     <FieldWithCount key={i}
                       value={gt.shortHeadlines?.[i] || ""}
                       onChange={v => setGoogleText(p, "shortHeadlines", i, v)}
                       placeholder={`Nadpis ${i + 1}`}
-                      max={30} warn={25}
+                      max={hlMax} warn={hlMax - 5}
                     />
                   ))}
                 </div>
@@ -49,13 +56,13 @@ export function GoogleTextsTab({ camp, setGoogleText }: GoogleTextsTabProps) {
                   />
                 ))}
               </Section>
-              <Section title="POPISY – max 90 zn. (4 varianty)" color="text-channel-google">
-                {Array.from({ length: 4 }, (_, i) => (
+              <Section title={`POPISY – max ${descMax} zn. (${descCount} varianty)`} color="text-channel-google">
+                {Array.from({ length: descCount }, (_, i) => (
                   <FieldWithCount key={i}
                     value={gt.descriptions?.[i] || ""}
                     onChange={v => setGoogleText(p, "descriptions", i, v)}
                     placeholder={`Popis ${i + 1}`}
-                    max={90} warn={80}
+                    max={descMax} warn={descMax - 10}
                   />
                 ))}
               </Section>
