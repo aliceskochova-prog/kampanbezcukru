@@ -81,12 +81,16 @@ export const defaultCampaign = (name: string): Campaign => ({
   metaTexts: {},
 });
 
+export const TONE_OPTIONS = ["neutrální", "přátelský", "odborný", "prodejní"] as const;
+export type ToneOption = typeof TONE_OPTIONS[number];
+
 export interface GenSettings {
   clientName: string;
   headlineCount: number;
   headlineLength: number;
   descriptionCount: number;
   descriptionLength: number;
+  tone: ToneOption;
 }
 
 export const defaultGenSettings: GenSettings = {
@@ -95,7 +99,25 @@ export const defaultGenSettings: GenSettings = {
   headlineLength: 30,
   descriptionCount: 4,
   descriptionLength: 90,
+  tone: "přátelský",
 };
+
+const SETTINGS_KEY = "campaign_gen_settings";
+
+export function loadSettings(): GenSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...defaultGenSettings, ...parsed };
+    }
+  } catch {}
+  return { ...defaultGenSettings };
+}
+
+export function saveSettings(s: GenSettings): void {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
 
 export interface GenBrief {
   product: string;

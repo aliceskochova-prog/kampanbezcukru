@@ -1,8 +1,10 @@
 import { CharCount } from "./CharCount";
-import { type Campaign } from "@/lib/campaign-data";
+import { type Campaign, type GenSettings } from "@/lib/campaign-data";
+
 interface SklikTextsTabProps {
   camp: Campaign;
   setSklikText: (product: string, field: string, idx: number, val: string) => void;
+  settings: GenSettings;
 }
 
 function trimToLimit(text: string, max: number): string {
@@ -18,7 +20,10 @@ function trimToLimit(text: string, max: number): string {
   return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
 }
 
-export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
+export function SklikTextsTab({ camp, setSklikText, settings }: SklikTextsTabProps) {
+  const hlMax = settings.headlineLength;
+  const descMax = settings.descriptionLength;
+
   return (
     <div>
       <div className="bg-channel-sklik-light rounded-lg px-3.5 py-2 text-xs text-channel-sklik mb-4 border border-channel-sklik/20">
@@ -33,10 +38,10 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
               <div className="mb-5">
                 <div className="text-xs font-bold text-channel-sklik mb-3">🔍 SEARCH reklama</div>
                 <div className="mb-3">
-                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">TITULEK – max 30 zn. (4 varianty)</div>
+                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">TITULEK – max {hlMax} zn. (4 varianty)</div>
                   {Array.from({ length: 4 }, (_, i) => {
                     const val = st.headlines?.[i] || "";
-                    const over = val.length > 30;
+                    const over = val.length > hlMax;
                     return (
                       <div key={i} className="flex items-center gap-1 mb-1">
                         <div className="relative flex-1">
@@ -47,11 +52,11 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                             className={`w-full px-2 py-1 pr-12 rounded border text-xs bg-card ${over ? "border-destructive" : "border-input"}`}
                           />
                           <span className="absolute right-1.5 top-1.5">
-                            <CharCount value={val} max={30} warn={25} />
+                            <CharCount value={val} max={hlMax} warn={hlMax - 5} />
                           </span>
                         </div>
                         {over && (
-                          <button onClick={() => setSklikText(p, "headlines", i, trimToLimit(val, 30))}
+                          <button onClick={() => setSklikText(p, "headlines", i, trimToLimit(val, hlMax))}
                             className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap">✂️</button>
                         )}
                       </div>
@@ -59,10 +64,10 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                   })}
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
+                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max {descMax} zn. (2 varianty)</div>
                   {Array.from({ length: 2 }, (_, i) => {
                     const val = st.descriptions?.[i] || "";
-                    const over = val.length > 90;
+                    const over = val.length > descMax;
                     return (
                       <div key={i} className="mb-2">
                         <div className="flex items-start gap-1">
@@ -74,11 +79,11 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                             className={`flex-1 px-2 py-1 rounded border text-xs bg-card resize-y ${over ? "border-destructive" : "border-input"}`}
                           />
                           {over && (
-                            <button onClick={() => setSklikText(p, "descriptions", i, trimToLimit(val, 90))}
+                            <button onClick={() => setSklikText(p, "descriptions", i, trimToLimit(val, descMax))}
                               className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap mt-0.5">✂️</button>
                           )}
                         </div>
-                        <div className="text-right"><CharCount value={val} max={90} warn={80} /></div>
+                        <div className="text-right"><CharCount value={val} max={descMax} warn={descMax - 10} /></div>
                       </div>
                     );
                   })}
@@ -139,10 +144,10 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                   })}
                 </div>
                 <div>
-                  <div className="text-xs font-semibond text-channel-sklik/80 mb-2">POPISEK – max 90 zn. (2 varianty)</div>
+                  <div className="text-xs font-semibold text-channel-sklik/80 mb-2">POPISEK – max {descMax} zn. (2 varianty)</div>
                   {Array.from({ length: 2 }, (_, i) => {
                     const val = st.displayDescriptions?.[i] || "";
-                    const over = val.length > 90;
+                    const over = val.length > descMax;
                     return (
                       <div key={i} className="mb-2">
                         <div className="flex items-start gap-1">
@@ -154,11 +159,11 @@ export function SklikTextsTab({ camp, setSklikText }: SklikTextsTabProps) {
                             className={`flex-1 px-2 py-1 rounded border text-xs bg-card resize-y ${over ? "border-destructive" : "border-input"}`}
                           />
                           {over && (
-                            <button onClick={() => setSklikText(p, "displayDescriptions", i, trimToLimit(val, 90))}
+                            <button onClick={() => setSklikText(p, "displayDescriptions", i, trimToLimit(val, descMax))}
                               className="text-[11px] bg-destructive/10 text-destructive border border-destructive/30 rounded px-1.5 py-1 cursor-pointer hover:bg-destructive/20 whitespace-nowrap mt-0.5">✂️</button>
                           )}
                         </div>
-                        <div className="text-right"><CharCount value={val} max={90} warn={80} /></div>
+                        <div className="text-right"><CharCount value={val} max={descMax} warn={descMax - 10} /></div>
                       </div>
                     );
                   })}

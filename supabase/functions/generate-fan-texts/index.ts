@@ -3,7 +3,24 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-const SYSTEM_PROMPT = `Jsi expert na performance marketing pro českou e-commerce značku FAN Sladidla (F&N dodavatelé, s.r.o.).
+
+const BASE_SYSTEM_PROMPT = `Jsi expert na performance marketing.
+=== PŘÍSNĚ ZAKÁZANÁ SLOVA – NIKDY JE NEPOUŽÍVEJ ===
+❌ „zdravě" a VŠECHNY tvarové varianty: zdravě, zdravěji, zdravější, zdravě žít, zdravě sladit, zdravě péct, zdravý životní styl, zdravá volba
+❌ „tradičně" a VŠECHNY tvarové varianty: tradičně, tradiční, tradice (ve smyslu „tradiční recept", „tradiční chuť")
+Náhradní formulace:
+- Místo „zdravě/zdravěji": „s méně cukru", „bez zbytečných kalorií", „s lepší volbou", „pro klidnější svědomí", „bez velkých změn", „s chutí a bez výčitek", „vhodné i pro diabetiky"
+- Místo „tradičně/tradiční": „osvědčené recepty", „oblíbené moučníky", „klasické pečení", „chuť, na kterou jste zvyklí", „jako vždycky, jen lépe"
+=== DALŠÍ ZAKÁZANÉ TYPY FORMULACÍ ===
+- Nepodložená medicínská tvrzení
+- Přehnaný wellness/fitness jazyk
+- Moralizující/strašící tón
+- Generické fráze: „revoluční řešení", „unikátní benefit", „posuňte svůj životní styl"
+- Korporátní/sterilní jazyk
+- Příliš agresivní prodejní tón
+DŮLEŽITÉ: Pokud uživatel v zadání použije zakázané slovo, automaticky ho nahraď přípustnou alternativou bez komentáře.`;
+
+const FAN_SYSTEM_PROMPT = `Jsi expert na performance marketing pro českou e-commerce značku FAN Sladidla (F&N dodavatelé, s.r.o.).
 === IDENTITA ZNAČKY ===
 FAN Sladidla – český výrobce moderních sladidel, 30+ let na trhu, sídlo Tišice u Mělníka.
 Pomáhá lidem omezit cukr, aniž by se museli vzdát sladké chuti a svých sladkých rituálů.
@@ -72,35 +89,65 @@ Inspirace: nápady, aby lidé měli chuť tvořit dál
 === CTA STYL ===
 Přirozené CTA, ne „Koupit". Příklady: „Zkuste to i vy", „Objednejte dnes", „Vyzkoušejte v pečení"
 DŮLEŽITÉ: Pokud uživatel v zadání použije zakázané slovo, automaticky ho nahraď přípustnou alternativou bez komentáře.`;
+
+const TONE_MAP: Record<string, string> = {
+  "neutrální": "Piš neutrálním, věcným tónem bez emocí. Fakta a jasné sdělení.",
+  "přátelský": "Piš přátelsky – jako rada od někoho, kdo to myslí dobře. Jednoduchý, přirozený jazyk.",
+  "odborný": "Piš odborným tónem – precizní formulace, profesionální jazyk, bez zbytečných emocí.",
+  "prodejní": "Piš prodejním tónem – aktivní výzvy k akci, urgence, výhody pro zákazníka. Přesvědčivě ale ne agresivně.",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
   try {
-    const { product, usp, cta, audience } = await req.json();
+    const body = await req.json();
+    const { product, usp, cta, audience } = body;
+    const headlineCount = body.headlineCount || 15;
+    const headlineLength = body.headlineLength || 30;
+    const descriptionCount = body.descriptionCount || 4;
+    const descriptionLength = body.descriptionLength || 90;
+    const tone = body.tone || "přátelský";
+    const clientName = body.clientName || "";
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Use FAN-specific prompt if client is FAN or empty, otherwise generic
+    const isFan = !clientName || clientName.toLowerCase().includes("fan");
+    let systemPrompt = isFan ? FAN_SYSTEM_PROMPT : BASE_SYSTEM_PROMPT;
+    
+    if (clientName && !isFan) {
+      systemPrompt = `Jsi expert na performance marketing pro klienta "${clientName}".\n` + systemPrompt;
+    }
+
+    // Add tone instruction
+    const toneInstruction = TONE_MAP[tone] || TONE_MAP["přátelský"];
+    systemPrompt += `\n=== TÓN KOMUNIKACE ===\n${toneInstruction}`;
+
     const userPrompt = `Vygeneruj reklamní texty pro produkt: "${product}".
+${clientName ? `Klient: ${clientName}` : ""}
 Doplňující info od zadavatele: ${usp}
 CTA: ${cta || "Zkuste to i vy"}
-Cílová skupina: ${audience || "diabetici, senioři 50+, maminky, lifestyle"}
-DŮLEŽITÉ: Claim „Slaďte s chutí" nebo jeho variace MUSÍ být součástí výstupu.
+Cílová skupina: ${audience || "obecná"}
+${isFan ? 'DŮLEŽITÉ: Claim „Slaďte s chutí" nebo jeho variace MUSÍ být součástí výstupu.' : ''}
 DŮLEŽITÉ: NIKDY nepoužívej slova „zdravě", „zdravější", „zdravý", „tradičně", „tradiční" ani jejich varianty!
 DŮLEŽITÉ: Všechny texty musí přesně dodržet zadané limity znaků – nepřekračuj je!
 Vrať POUZE platný JSON objekt (bez markdown backticks, bez komentářů):
 {
   "google": {
-    "shortHeadlines": ["přesně 15 variant, každý MAX 30 znaků – konkrétní, úderné, s vazbou na claim"],
+    "shortHeadlines": ["přesně ${headlineCount} variant, každý MAX ${headlineLength} znaků – konkrétní, úderné, s vazbou na claim"],
     "longHeadlines": ["přesně 5 variant, každý MAX 90 znaků – s benefitem použití"],
-    "descriptions": ["přesně 4 varianty, každý MAX 90 znaků – přesvědčivé, konkrétní"],
+    "descriptions": ["přesně ${descriptionCount} varianty, každý MAX ${descriptionLength} znaků – přesvědčivé, konkrétní"],
     "extensions": ["přesně 8 variant, každé MAX 25 znaků – hesla jako Česká výroba, Bez cukru, Doprava zdarma"]
   },
   "sklik": {
-    "headlines": ["přesně 4 varianty, každý MAX 30 znaků – úderné titulky pro Search"],
-    "descriptions": ["přesně 2 varianty, každý MAX 90 znaků – přesvědčivé popisy pro Search"],
+    "headlines": ["přesně 4 varianty, každý MAX ${headlineLength} znaků – úderné titulky pro Search"],
+    "descriptions": ["přesně 2 varianty, každý MAX ${descriptionLength} znaků – přesvědčivé popisy pro Search"],
     "displayShortTitles": ["přesně 2 varianty, každý MAX 25 znaků – krátké titulky pro Display/Kombinovanou reklamu"],
     "displayLongTitles": ["přesně 2 varianty, každý MAX 90 znaků – dlouhé titulky pro Display/Kombinovanou reklamu"],
-    "displayDescriptions": ["přesně 2 varianty, každý MAX 90 znaků – popisky pro Display/Kombinovanou reklamu"]
+    "displayDescriptions": ["přesně 2 varianty, každý MAX ${descriptionLength} znaků – popisky pro Display/Kombinovanou reklamu"]
   },
   "meta": {
     "mainTexts": [
@@ -128,7 +175,7 @@ Vrať POUZE platný JSON objekt (bez markdown backticks, bez komentářů):
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
       }),

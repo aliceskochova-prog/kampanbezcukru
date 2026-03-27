@@ -6,6 +6,10 @@ import {
   defaultCampaign,
   type Campaign,
   type GenBrief,
+  type GenSettings,
+  defaultGenSettings,
+  loadSettings,
+  saveSettings,
 } from "@/lib/campaign-data";
 import { ChecklistTab } from "@/components/campaign/ChecklistTab";
 import { GeneratorTab } from "@/components/campaign/GeneratorTab";
@@ -13,6 +17,7 @@ import { GoogleTextsTab } from "@/components/campaign/GoogleTextsTab";
 import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
 import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
+import { SettingsTab } from "@/components/campaign/SettingsTab";
 
 interface PPCRow {
   platforma: string;
@@ -58,6 +63,7 @@ function getStatus(len: number, max: number): string {
 }
 
 const TABS = [
+  { key: "settings", label: "⚙️ Nastavení" },
   { key: "checklist", label: "✅ Checklist" },
   { key: "generate", label: "✨ Generátor textů" },
   { key: "google", label: "Google Ads texty" },
@@ -81,12 +87,13 @@ function dbToCampaign(row: any): Campaign {
 export default function CampaignManager() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [activeTab, setActiveTab] = useState("checklist");
+  const [activeTab, setActiveTab] = useState("settings");
   const [newName, setNewName] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [genBrief, setGenBrief] = useState<GenBrief>({ product: "", usp: "", cta: "", audience: "" });
+  const [settings, setSettings] = useState<GenSettings>(loadSettings);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -196,6 +203,12 @@ export default function CampaignManager() {
           usp: genBrief.usp,
           cta: genBrief.cta,
           audience: genBrief.audience,
+          headlineCount: settings.headlineCount,
+          headlineLength: settings.headlineLength,
+          descriptionCount: settings.descriptionCount,
+          descriptionLength: settings.descriptionLength,
+          tone: settings.tone,
+          clientName: settings.clientName,
         },
       });
       if (error) throw error;
@@ -252,7 +265,7 @@ export default function CampaignManager() {
       const m = (camp.metaTexts[p] as any) || {};
       (g.shortHeadlines || []).forEach((text: string, i: number) => {
         if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Krátký nadpis", cislo: i + 1, text, znaku: text.length, limit: 30, status: getStatus(text.length, 30) });
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Krátký nadpis", cislo: i + 1, text, znaku: text.length, limit: settings.headlineLength, status: getStatus(text.length, settings.headlineLength) });
       });
       (g.longHeadlines || []).forEach((text: string, i: number) => {
         if (!text) return;
@@ -260,7 +273,7 @@ export default function CampaignManager() {
       });
       (g.descriptions || []).forEach((text: string, i: number) => {
         if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Popis", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Popis", cislo: i + 1, text, znaku: text.length, limit: settings.descriptionLength, status: getStatus(text.length, settings.descriptionLength) });
       });
       (g.extensions || []).forEach((text: string, i: number) => {
         if (!text) return;
@@ -268,11 +281,11 @@ export default function CampaignManager() {
       });
       (s.headlines || []).forEach((text: string, i: number) => {
         if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search titulek", cislo: i + 1, text, znaku: text.length, limit: 30, status: getStatus(text.length, 30) });
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search titulek", cislo: i + 1, text, znaku: text.length, limit: settings.headlineLength, status: getStatus(text.length, settings.headlineLength) });
       });
       (s.descriptions || []).forEach((text: string, i: number) => {
         if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search popisek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
+        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search popisek", cislo: i + 1, text, znaku: text.length, limit: settings.descriptionLength, status: getStatus(text.length, settings.descriptionLength) });
       });
       (s.displayShortTitles || []).forEach((text: string, i: number) => {
         if (!text) return;
@@ -435,12 +448,22 @@ export default function CampaignManager() {
         ))}
       </div>
       <div className="p-6">
+        {activeTab === "settings" && (
+          <SettingsTab
+            settings={settings}
+            setSettings={setSettings}
+            onSaveDefault={() => {
+              saveSettings(settings);
+              toast.success("Nastavení uloženo jako výchozí.");
+            }}
+          />
+        )}
         {activeTab === "checklist" && <ChecklistTab camp={camp} setChecklistStatus={setChecklistStatus} />}
         {activeTab === "generate" && (
-          <GeneratorTab camp={camp} genBrief={genBrief} setGenBrief={setGenBrief} generating={generating} onGenerate={generateTexts} />
+          <GeneratorTab camp={camp} genBrief={genBrief} setGenBrief={setGenBrief} generating={generating} onGenerate={generateTexts} settings={settings} />
         )}
-        {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} />}
-        {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} />}
+        {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} settings={settings} />}
+        {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} settings={settings} />}
         {activeTab === "meta" && <MetaTextsTab camp={camp} setMetaText={setMetaText} />}
         {activeTab === "grafik" && <GrafikTab camp={camp} />}
       </div>
