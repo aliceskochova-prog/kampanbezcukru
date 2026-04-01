@@ -92,6 +92,8 @@ export default function CampaignManager() {
   const [showNew, setShowNew] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingTabIdx, setEditingTabIdx] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [genBrief, setGenBrief] = useState<GenBrief>({ product: "", usp: "", cta: "", audience: "" });
   const [settings, setSettings] = useState<GenSettings>(loadSettings);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
