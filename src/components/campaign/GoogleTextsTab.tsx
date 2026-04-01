@@ -1,4 +1,5 @@
 import { CharCount } from "./CharCount";
+import { CopyButton, CopyAllButton } from "./CopyButton";
 import { type Campaign, type GenSettings } from "@/lib/campaign-data";
 
 interface GoogleTextsTabProps {
@@ -10,11 +11,7 @@ interface GoogleTextsTabProps {
 function trimToLimit(text: string, max: number): string {
   if (text.length <= max) return text;
   const trimmed = text.slice(0, max);
-  const lastSentence = Math.max(
-    trimmed.lastIndexOf(". "),
-    trimmed.lastIndexOf("! "),
-    trimmed.lastIndexOf("? ")
-  );
+  const lastSentence = Math.max(trimmed.lastIndexOf(". "), trimmed.lastIndexOf("! "), trimmed.lastIndexOf("? "));
   if (lastSentence > 0) return trimmed.slice(0, lastSentence + 1);
   const lastSpace = trimmed.lastIndexOf(" ");
   return lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed;
@@ -34,7 +31,8 @@ export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTab
           <div key={p} className="bg-card rounded-xl border border-channel-google/10 mb-5 overflow-hidden">
             <div className="bg-channel-google text-primary-foreground px-4 py-2.5 font-bold text-sm">{p}</div>
             <div className="p-4">
-              <Section title={`KRÁTKÉ NADPISY – max ${hlMax} zn. (${hlCount} variant)`} color="text-channel-google">
+              <Section title={`KRÁTKÉ NADPISY – max ${hlMax} zn. (${hlCount} variant)`} color="text-channel-google"
+                copyTexts={(gt.shortHeadlines || []).filter(Boolean)}>
                 <div className="grid grid-cols-3 gap-1.5">
                   {Array.from({ length: hlCount }, (_, i) => (
                     <FieldWithCount key={i}
@@ -46,7 +44,8 @@ export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTab
                   ))}
                 </div>
               </Section>
-              <Section title="DLOUHÉ NADPISY – max 90 zn. (5 variant)" color="text-channel-google">
+              <Section title="DLOUHÉ NADPISY – max 90 zn. (5 variant)" color="text-channel-google"
+                copyTexts={(gt.longHeadlines || []).filter(Boolean)}>
                 {Array.from({ length: 5 }, (_, i) => (
                   <FieldWithCount key={i}
                     value={gt.longHeadlines?.[i] || ""}
@@ -56,7 +55,8 @@ export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTab
                   />
                 ))}
               </Section>
-              <Section title={`POPISY – max ${descMax} zn. (${descCount} varianty)`} color="text-channel-google">
+              <Section title={`POPISY – max ${descMax} zn. (${descCount} varianty)`} color="text-channel-google"
+                copyTexts={(gt.descriptions || []).filter(Boolean)}>
                 {Array.from({ length: descCount }, (_, i) => (
                   <FieldWithCount key={i}
                     value={gt.descriptions?.[i] || ""}
@@ -66,7 +66,8 @@ export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTab
                   />
                 ))}
               </Section>
-              <Section title="ROZŠÍŘENÍ / HESLA – max 25 zn. (4–8 ks)" color="text-channel-google">
+              <Section title="ROZŠÍŘENÍ / HESLA – max 25 zn. (4–8 ks)" color="text-channel-google"
+                copyTexts={(gt.extensions || []).filter(Boolean)}>
                 <div className="grid grid-cols-4 gap-1.5">
                   {Array.from({ length: 8 }, (_, i) => (
                     <FieldWithCount key={i}
@@ -86,10 +87,13 @@ export function GoogleTextsTab({ camp, setGoogleText, settings }: GoogleTextsTab
   );
 }
 
-function Section({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
+function Section({ title, color, children, copyTexts }: { title: string; color: string; children: React.ReactNode; copyTexts?: string[] }) {
   return (
     <div className="mb-4">
-      <div className={`text-xs font-bold ${color} mb-2`}>{title}</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className={`text-xs font-bold ${color}`}>{title}</div>
+        {copyTexts && <CopyAllButton texts={copyTexts} />}
+      </div>
       {children}
     </div>
   );
@@ -107,14 +111,13 @@ function FieldWithCount({ value, onChange, placeholder, max, warn }: {
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
-            className={`w-full px-2 py-1 pr-11 rounded border text-xs bg-card ${
-              over ? "border-destructive" : "border-input"
-            }`}
+            className={`w-full px-2 py-1 pr-11 rounded border text-xs bg-card ${over ? "border-destructive" : "border-input"}`}
           />
           <span className="absolute right-1.5 top-1.5">
             <CharCount value={value} max={max} warn={warn} />
           </span>
         </div>
+        {value && <CopyButton text={value} />}
         {over && (
           <button
             onClick={() => onChange(trimToLimit(value, max))}

@@ -354,13 +354,33 @@ export default function CampaignManager() {
           </p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
+          <button
+            onClick={async () => {
+              if (!confirm("Opravdu chcete vytvořit nový projekt? Současná data zůstanou uložena.")) return;
+              const def = defaultCampaign("Nový projekt");
+              const { data: inserted, error } = await supabase
+                .from("campaigns")
+                .insert({
+                  name: def.name, products: def.products, checklist: def.checklist,
+                  google_texts: def.googleTexts, sklik_texts: def.sklikTexts, meta_texts: def.metaTexts,
+                })
+                .select().single();
+              if (error || !inserted) { toast.error("Chyba při vytváření projektu"); return; }
+              setCampaigns(p => [...p, dbToCampaign(inserted)]);
+              setActiveIdx(campaigns.length);
+              setGenBrief({ product: "", usp: "", cta: "", audience: "" });
+              setSettings({ ...defaultGenSettings, textTypes: defaultGenSettings.textTypes.map(t => ({ ...t })) });
+              setActiveTab("settings");
+              toast.success("Nový projekt vytvořen!");
+            }}
+            className="bg-status-done text-primary-foreground border-none rounded-md px-3 py-1.5 cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity"
+          >
+            🆕 Nový projekt
+          </button>
           {campaigns.map((c, i) => (
             <button
               key={i}
-              onClick={() => {
-                setActiveIdx(i);
-                setGenBrief({ product: "", usp: "", cta: "", audience: "" });
-              }}
+              onClick={() => { setActiveIdx(i); setGenBrief({ product: "", usp: "", cta: "", audience: "" }); }}
               className={`px-3 py-1.5 rounded-md text-sm border-none cursor-pointer transition-colors ${
                 i === activeIdx
                   ? "bg-primary text-primary-foreground font-bold"
@@ -370,59 +390,11 @@ export default function CampaignManager() {
               {c.name}
             </button>
           ))}
-          {showNew ? (
-            <div className="flex gap-1">
-              <input
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder="Název kampaně"
-                className="px-2 py-1 rounded border border-primary-foreground/30 text-sm bg-fan-navy-light text-primary-foreground placeholder:text-primary-foreground/40"
-              />
-              <button
-                onClick={async () => {
-                  if (newName.trim()) {
-                    const def = defaultCampaign(newName.trim());
-                    const { data: inserted, error } = await supabase
-                      .from("campaigns")
-                      .insert({
-                        name: def.name,
-                        products: def.products,
-                        checklist: def.checklist,
-                        google_texts: def.googleTexts,
-                        sklik_texts: def.sklikTexts,
-                        meta_texts: def.metaTexts,
-                      })
-                      .select()
-                      .single();
-                    if (error || !inserted) {
-                      toast.error("Chyba při vytváření kampaně");
-                      return;
-                    }
-                    setCampaigns(p => [...p, dbToCampaign(inserted)]);
-                    setActiveIdx(campaigns.length);
-                    setGenBrief({ product: "", usp: "", cta: "", audience: "" });
-                    setNewName("");
-                    setShowNew(false);
-                  }
-                }}
-                className="bg-status-done text-primary-foreground border-none rounded px-2.5 py-1 cursor-pointer text-sm font-semibold"
-              >
-                + Přidat
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowNew(true)}
-              className="border border-dashed border-primary-foreground/30 text-primary-foreground/60 bg-transparent rounded-md px-3 py-1.5 cursor-pointer text-sm hover:border-primary-foreground/50 transition-colors"
-            >
-              + Nová kampaň
-            </button>
-          )}
           <button
             onClick={handleExport}
             className="bg-green-600 hover:bg-green-500 text-white border-none rounded-md px-3 py-1.5 cursor-pointer text-sm font-semibold transition-colors"
           >
-            📥 Export do Excelu
+            📥 Export CSV
           </button>
         </div>
       </div>

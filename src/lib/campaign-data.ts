@@ -125,17 +125,30 @@ export const defaultGenSettings: GenSettings = {
 
 // ─── Checklist ────────────────────────────────────────────────────────────────
 
+export type ChannelKey = "google" | "sklik" | "meta";
+
+export const CHANNELS: Record<ChannelKey, { label: string; colorClass: string }> = {
+  google: { label: "Google Ads", colorClass: "bg-channel-google" },
+  sklik: { label: "Sklik", colorClass: "bg-channel-sklik" },
+  meta: { label: "META Ads", colorClass: "bg-channel-meta" },
+};
+
+export const STATUS_OPTIONS = ["–", "✅ Hotovo", "⏳ Čeká", "❌ Chybí"];
+
 export const CHECKLIST_ITEMS = [
-  { label: "Brief od klienta", category: "Příprava" },
-  { label: "Klíčová slova", category: "Příprava" },
-  { label: "Cílová skupina", category: "Příprava" },
-  { label: "USP / sdělení", category: "Příprava" },
-  { label: "Texty Google Ads", category: "Tvorba" },
-  { label: "Texty Sklik", category: "Tvorba" },
-  { label: "Texty META", category: "Tvorba" },
-  { label: "Grafické podklady", category: "Tvorba" },
-  { label: "Schválení klientem", category: "Finalizace" },
-  { label: "Nasazení kampaně", category: "Finalizace" },
+  { label: "Krátké nadpisy", category: "Copy", channel: "google" as ChannelKey, type: "copy" as const, spec: "max 30 zn." },
+  { label: "Dlouhé nadpisy", category: "Copy", channel: "google" as ChannelKey, type: "copy" as const, spec: "max 90 zn." },
+  { label: "Popisy", category: "Copy", channel: "google" as ChannelKey, type: "copy" as const, spec: "max 90 zn." },
+  { label: "Rozšíření", category: "Copy", channel: "google" as ChannelKey, type: "copy" as const, spec: "max 25 zn." },
+  { label: "Bannery Google", category: "Grafika", channel: "google" as ChannelKey, type: "grafika" as const, spec: "PMAX vizuály" },
+  { label: "Search titulky", category: "Copy", channel: "sklik" as ChannelKey, type: "copy" as const, spec: "max 30 zn." },
+  { label: "Search popisky", category: "Copy", channel: "sklik" as ChannelKey, type: "copy" as const, spec: "max 90 zn." },
+  { label: "Display titulky", category: "Copy", channel: "sklik" as ChannelKey, type: "copy" as const, spec: "max 25/90 zn." },
+  { label: "Display popisky", category: "Copy", channel: "sklik" as ChannelKey, type: "copy" as const, spec: "max 90 zn." },
+  { label: "Bannery Sklik", category: "Grafika", channel: "sklik" as ChannelKey, type: "grafika" as const, spec: "Display vizuály" },
+  { label: "Hlavní texty", category: "Copy", channel: "meta" as ChannelKey, type: "copy" as const, spec: "5 variant" },
+  { label: "Headlines", category: "Copy", channel: "meta" as ChannelKey, type: "copy" as const, spec: "max 40 zn." },
+  { label: "Vizuály META", category: "Grafika", channel: "meta" as ChannelKey, type: "grafika" as const, spec: "1080×1080 / 1080×1920" },
 ];
 
 // ─── Výchozí kampaň — PRÁZDNÁ (bez hardcoded produktů) ───────────────────────
