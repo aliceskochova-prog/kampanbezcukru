@@ -65,4 +65,79 @@ export function GeneratorTab({
       <div className="bg-card rounded-xl p-6 border border-border mb-5">
         <h2 className="font-bold text-base mb-4 text-foreground">✨ AI Generátor textů</h2>
         {settings.clientName && (
-          <div className="text-xs text-
+          <div className="text-xs text-muted-foreground mb-3 bg-muted/50 rounded px-3 py-1.5 border border-border">
+            🏢 Klient: <span className="font-semibold text-foreground">{settings.clientName}</span>
+          </div>
+        )}
+
+        <div className="grid gap-3">
+          <div>
+            <label className="text-sm font-semibold text-foreground/80 block mb-1">Produkt</label>
+            {camp.products.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nejdřív přidej produkty výše.</p>
+            ) : (
+              <select
+                value={genBrief.product}
+                onChange={e => setGenBrief(b => ({ ...b, product: e.target.value }))}
+                className="w-full px-3 py-2 rounded-md border border-input text-sm bg-card"
+              >
+                <option value="">— Vyber produkt —</option>
+                {camp.products.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-foreground/80 block mb-1">USP / hlavní sdělení *</label>
+            <textarea
+              value={genBrief.usp}
+              onChange={e => setGenBrief(b => ({ ...b, usp: e.target.value }))}
+              placeholder="Co je na produktu unikátní? Jaké benefity komunikovat?"
+              rows={3}
+              className="w-full px-3 py-2 rounded-md border border-input text-sm bg-card resize-y"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-semibold text-foreground/80 block mb-1">CTA</label>
+              <input
+                value={genBrief.cta}
+                onChange={e => setGenBrief(b => ({ ...b, cta: e.target.value }))}
+                placeholder="např. Objednejte dnes"
+                className="w-full px-3 py-2 rounded-md border border-input text-sm bg-card"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-foreground/80 block mb-1">Cílová skupina</label>
+              <input
+                value={genBrief.audience}
+                onChange={e => setGenBrief(b => ({ ...b, audience: e.target.value }))}
+                placeholder="např. ženy 25-45"
+                className="w-full px-3 py-2 rounded-md border border-input text-sm bg-card"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-border">
+          <div className="text-xs font-semibold text-foreground/70 mb-1">Aktivní formáty:</div>
+          <div className="text-xs text-muted-foreground">
+            {settings.textTypes.map(t => `${t.label} (${t.count}× max ${t.maxLength} zn.)`).join(" · ")}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Tón: {settings.tone}
+          </div>
+        </div>
+
+        <button
+          onClick={onGenerate}
+          disabled={generating || !genBrief.product || !genBrief.usp}
+          className="mt-4 w-full bg-primary text-primary-foreground border-none rounded-lg px-6 py-3 text-sm font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+        >
+          {generating ? "⏳ Generuji texty..." : "✨ Vygenerovat texty"}
+        </button>
+      </div>
+    </div>
+  );
+}
