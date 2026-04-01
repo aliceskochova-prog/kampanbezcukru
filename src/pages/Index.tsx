@@ -380,17 +380,59 @@ export default function CampaignManager() {
             🆕 Nový projekt
           </button>
           {campaigns.map((c, i) => (
-            <button
-              key={i}
-              onClick={() => { setActiveIdx(i); setGenBrief({ product: "", usp: "", cta: "", audience: "" }); }}
-              className={`px-3 py-1.5 rounded-md text-sm border-none cursor-pointer transition-colors ${
+            <div
+              key={c.id || i}
+              className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border-none cursor-pointer transition-colors ${
                 i === activeIdx
                   ? "bg-primary text-primary-foreground font-bold"
                   : "bg-fan-navy-light text-primary-foreground/80 hover:bg-primary/60"
               }`}
+              onClick={() => { setActiveIdx(i); setGenBrief({ product: "", usp: "", cta: "", audience: "" }); }}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingTabIdx(i); setEditingName(c.name); }}
             >
-              {c.name}
-            </button>
+              {editingTabIdx === i ? (
+                <input
+                  autoFocus
+                  value={editingName}
+                  onChange={e => setEditingName(e.target.value)}
+                  onBlur={async () => {
+                    const trimmed = editingName.trim();
+                    if (trimmed && trimmed !== c.name) {
+                      update(camp => { camp.name = trimmed; });
+                      const updated = { ...c, name: trimmed };
+                      await saveCampaign(updated);
+                    }
+                    setEditingTabIdx(null);
+                  }}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") setEditingTabIdx(null);
+                  }}
+                  onClick={e => e.stopPropagation()}
+                  className="bg-transparent border-b border-primary-foreground/50 text-primary-foreground text-sm font-bold outline-none w-24"
+                />
+              ) : (
+                <span>{c.name}</span>
+              )}
+              {campaigns.length > 1 && editingTabIdx !== i && (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`Opravdu smazat kampaň „${c.name}"?`)) return;
+                    if (!c.id) return;
+                    const { error } = await supabase.from("campaigns").delete().eq("id", c.id);
+                    if (error) { toast.error("Chyba při mazání kampaně"); return; }
+                    setCampaigns(prev => prev.filter((_, idx) => idx !== i));
+                    setActiveIdx(prev => Math.min(prev, campaigns.length - 2));
+                    toast.success("Kampaň smazána.");
+                  }}
+                  className="ml-1 opacity-0 group-hover:opacity-100 text-primary-foreground/70 hover:text-primary-foreground bg-transparent border-none cursor-pointer text-xs leading-none transition-opacity"
+                  title="Smazat kampaň"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           ))}
           <button
             onClick={handleExport}
