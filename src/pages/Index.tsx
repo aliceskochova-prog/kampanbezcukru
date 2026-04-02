@@ -98,6 +98,25 @@ export default function CampaignManager() {
   const [settings, setSettings] = useState<GenSettings>(loadSettings);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
+  const refreshCampaign = useCallback(async (idx: number, allCampaigns: Campaign[]) => {
+    const c = allCampaigns[idx];
+    if (!c?.id) return;
+    const { data, error } = await supabase
+      .from("campaigns")
+      .select("*")
+      .eq("id", c.id)
+      .single();
+    if (!error && data) {
+      setCampaigns(prev => prev.map((camp, i) => i === idx ? dbToCampaign(data) : camp));
+    }
+  }, []);
+
+  const switchCampaign = useCallback(async (idx: number, allCampaigns: Campaign[]) => {
+    setActiveIdx(idx);
+    setGenBrief({ product: "", usp: "", cta: "", audience: "" });
+    await refreshCampaign(idx, allCampaigns);
+  }, [refreshCampaign]);
+
   useEffect(() => {
     const load = async () => {
       const { data, error } = await supabase
