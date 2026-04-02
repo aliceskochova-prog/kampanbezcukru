@@ -377,8 +377,9 @@ export default function CampaignManager() {
         <div className="flex gap-2 items-center flex-wrap">
           <button
             onClick={async () => {
-              if (!confirm("Opravdu chcete vytvořit nový projekt? Současná data zůstanou uložena.")) return;
-              const def = defaultCampaign("Nový projekt");
+              const name = prompt("Zadejte název nového projektu:", "Nový projekt");
+              if (!name || !name.trim()) return;
+              const def = defaultCampaign(name.trim());
               const { data: inserted, error } = await supabase
                 .from("campaigns")
                 .insert({
@@ -387,12 +388,13 @@ export default function CampaignManager() {
                 })
                 .select().single();
               if (error || !inserted) { toast.error("Chyba při vytváření projektu"); return; }
-              setCampaigns(p => [...p, dbToCampaign(inserted)]);
-              setActiveIdx(campaigns.length);
+              const newCampaigns = [...campaigns, dbToCampaign(inserted)];
+              setCampaigns(newCampaigns);
+              setActiveIdx(newCampaigns.length - 1);
               setGenBrief({ product: "", usp: "", cta: "", audience: "" });
               setSettings({ ...defaultGenSettings, textTypes: defaultGenSettings.textTypes.map(t => ({ ...t })) });
               setActiveTab("settings");
-              toast.success("Nový projekt vytvořen!");
+              toast.success(`Projekt „${name.trim()}" vytvořen!`);
             }}
             className="bg-status-done text-primary-foreground border-none rounded-md px-3 py-1.5 cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity"
           >
@@ -406,7 +408,7 @@ export default function CampaignManager() {
                   ? "bg-primary text-primary-foreground font-bold"
                   : "bg-fan-navy-light text-primary-foreground/80 hover:bg-primary/60"
               }`}
-              onClick={() => { setActiveIdx(i); setGenBrief({ product: "", usp: "", cta: "", audience: "" }); }}
+              onClick={() => switchCampaign(i, campaigns)}
               onDoubleClick={(e) => { e.stopPropagation(); setEditingTabIdx(i); setEditingName(c.name); }}
             >
               {editingTabIdx === i ? (
