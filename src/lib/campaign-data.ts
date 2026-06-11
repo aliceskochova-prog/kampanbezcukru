@@ -50,6 +50,7 @@ export interface Campaign {
   googleTexts: Record<string, any>;
   sklikTexts: Record<string, any>;
   metaTexts: Record<string, any>;
+  customTexts: Record<string, Record<string, string[]>>;
 }
 
 // ─── Šablony kampaní (typy textů) ────────────────────────────────────────────
@@ -156,11 +157,12 @@ export const CHECKLIST_ITEMS = [
 export function defaultCampaign(name: string): Campaign {
   return {
     name,
-    products: [], // ← prázdné, uživatel přidá sám
+    products: [],
     checklist: {},
     googleTexts: {},
     sklikTexts: {},
     metaTexts: {},
+    customTexts: {},
   };
 }
 
