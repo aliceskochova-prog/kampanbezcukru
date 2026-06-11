@@ -284,7 +284,7 @@ export default function CampaignManager() {
       toast.error("Žádné texty k exportu.");
       return;
     }
-    exportToExcel(rows, camp.name.replace(/[^a-zA-Z0-9_\-]/g, "_"));
+    exportToExcel(rows, camp.name.replace(/[^a-zA-Z0-9_-]/g, "_"));
     toast.success("Export dokončen!");
   };
 
