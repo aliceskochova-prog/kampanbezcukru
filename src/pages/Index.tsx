@@ -516,6 +516,9 @@ export default function CampaignManager() {
             onRemoveProduct={removeProduct}
           />
         )}
+        {activeTab === "results" && (
+          <GeneratedTextsTab camp={camp} settings={settings} setCustomText={setCustomText} />
+        )}
         {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} settings={settings} />}
         {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} settings={settings} />}
         {activeTab === "meta" && <MetaTextsTab camp={camp} setMetaText={setMetaText} />}
