@@ -13,9 +13,6 @@ import {
 } from "@/lib/campaign-data";
 import { ChecklistTab } from "@/components/campaign/ChecklistTab";
 import { GeneratorTab } from "@/components/campaign/GeneratorTab";
-import { GoogleTextsTab } from "@/components/campaign/GoogleTextsTab";
-import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
-import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
 import { SettingsTab } from "@/components/campaign/SettingsTab";
 import { GeneratedTextsTab } from "@/components/campaign/GeneratedTextsTab";
@@ -33,7 +30,7 @@ interface PPCRow {
 
 function exportToExcel(data: PPCRow[], fileName = "PPC_Export"): void {
   const header = ["Platforma", "Produkt", "Typ textu", "Č.", "Text", "Znaků", "Limit", "Status"];
-  const PLAT_ORDER = ["Google Ads", "Sklik", "META"];
+  const PLAT_ORDER = ["Google PMAX", "Google Search", "Sklik Search", "Sklik Display", "META Ads", "LinkedIn Ads", "Bannery"];
   const sorted = [...data].sort((a, b) => {
     const pi = PLAT_ORDER.indexOf(a.platforma) - PLAT_ORDER.indexOf(b.platforma);
     if (pi !== 0) return pi;
@@ -45,7 +42,7 @@ function exportToExcel(data: PPCRow[], fileName = "PPC_Export"): void {
   });
   const rows = sorted.map(r => [r.platforma, r.produkt, r.typTextu, r.cislo, r.text, r.znaku, r.limit || "", r.status]);
   const csvRows = [header, ...rows].map(row =>
-    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}`).join(",")
   );
   const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -68,9 +65,13 @@ const TABS = [
   { key: "checklist", label: "✅ Checklist" },
   { key: "generate", label: "✨ Generátor textů" },
   { key: "results", label: "📝 Vygenerované texty" },
-  { key: "google", label: "Google Ads" },
-  { key: "sklik", label: "Sklik" },
+  { key: "google_pmax", label: "Google PMAX" },
+  { key: "google_search", label: "Google Search" },
+  { key: "sklik_search", label: "Sklik Search" },
+  { key: "sklik_display", label: "Sklik Display" },
   { key: "meta", label: "META Ads" },
+  { key: "linkedin", label: "LinkedIn Ads" },
+  { key: "bannery", label: "Bannery" },
   { key: "grafik", label: "🎨 Pro grafika" },
 ];
 
@@ -213,26 +214,6 @@ export default function CampaignManager() {
       c.checklist[product][itemLabel] = val;
     });
 
-  const setGoogleText = (product: string, field: string, idx: number, val: string) =>
-    update(c => {
-      if (!c.googleTexts[product]) c.googleTexts[product] = {};
-      if (!c.googleTexts[product][field]) c.googleTexts[product][field] = [];
-      c.googleTexts[product][field][idx] = val;
-    });
-
-  const setSklikText = (product: string, field: string, idx: number, val: string) =>
-    update(c => {
-      if (!c.sklikTexts[product]) c.sklikTexts[product] = {};
-      if (!c.sklikTexts[product][field]) c.sklikTexts[product][field] = [];
-      c.sklikTexts[product][field][idx] = val;
-    });
-
-  const setMetaText = (product: string, field: string, val: string) =>
-    update(c => {
-      if (!c.metaTexts[product]) c.metaTexts[product] = {};
-      (c.metaTexts[product] as any)[field] = val;
-    });
-
   const completionFor = (product: string) => {
     const done = CHECKLIST_ITEMS.filter(i => camp.checklist[product]?.[i.label] === "✅ Hotovo").length;
     return Math.round((done / CHECKLIST_ITEMS.length) * 100);
@@ -280,55 +261,23 @@ export default function CampaignManager() {
   const handleExport = () => {
     const rows: PPCRow[] = [];
     camp.products.forEach(p => {
-      const g = camp.googleTexts[p] || {};
-      const s = camp.sklikTexts[p] || {};
-      const m = (camp.metaTexts[p] as any) || {};
-      (g.shortHeadlines || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Krátký nadpis", cislo: i + 1, text, znaku: text.length, limit: settings.headlineLength, status: getStatus(text.length, settings.headlineLength) });
+      const custom = (camp.customTexts?.[p] as Record<string, string[]>) || {};
+      settings.textTypes.forEach(t => {
+        const texts = custom[t.id] || [];
+        texts.forEach((text, i) => {
+          if (!text) return;
+          rows.push({
+            platforma: t.channel || "Ostatní",
+            produkt: p,
+            typTextu: t.label,
+            cislo: i + 1,
+            text,
+            znaku: text.length,
+            limit: t.maxLength,
+            status: getStatus(text.length, t.maxLength),
+          });
+        });
       });
-      (g.longHeadlines || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Dlouhý nadpis", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
-      });
-      (g.descriptions || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Popis", cislo: i + 1, text, znaku: text.length, limit: settings.descriptionLength, status: getStatus(text.length, settings.descriptionLength) });
-      });
-      (g.extensions || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Google Ads", produkt: p, typTextu: "Rozšíření", cislo: i + 1, text, znaku: text.length, limit: 25, status: getStatus(text.length, 25) });
-      });
-      (s.headlines || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search titulek", cislo: i + 1, text, znaku: text.length, limit: settings.headlineLength, status: getStatus(text.length, settings.headlineLength) });
-      });
-      (s.descriptions || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Search popisek", cislo: i + 1, text, znaku: text.length, limit: settings.descriptionLength, status: getStatus(text.length, settings.descriptionLength) });
-      });
-      (s.displayShortTitles || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display krátký titulek", cislo: i + 1, text, znaku: text.length, limit: 25, status: getStatus(text.length, 25) });
-      });
-      (s.displayLongTitles || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display dlouhý titulek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
-      });
-      (s.displayDescriptions || []).forEach((text: string, i: number) => {
-        if (!text) return;
-        rows.push({ platforma: "Sklik", produkt: p, typTextu: "Display popisek", cislo: i + 1, text, znaku: text.length, limit: 90, status: getStatus(text.length, 90) });
-      });
-      for (let i = 0; i < 5; i++) {
-        const text = m[`mainText_${i}`];
-        if (!text) continue;
-        rows.push({ platforma: "META", produkt: p, typTextu: "Hlavní text", cislo: i + 1, text, znaku: text.length, limit: 0, status: "✅ OK" });
-      }
-      for (let i = 0; i < 5; i++) {
-        const text = m[`headline_${i}`];
-        if (!text) continue;
-        rows.push({ platforma: "META", produkt: p, typTextu: "Headline", cislo: i + 1, text, znaku: text.length, limit: 40, status: getStatus(text.length, 40) });
-      }
     });
     if (rows.length === 0) {
       toast.error("Žádné texty k exportu.");
@@ -519,9 +468,28 @@ export default function CampaignManager() {
         {activeTab === "results" && (
           <GeneratedTextsTab camp={camp} settings={settings} setCustomText={setCustomText} />
         )}
-        {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} settings={settings} />}
-        {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} settings={settings} />}
-        {activeTab === "meta" && <MetaTextsTab camp={camp} setMetaText={setMetaText} />}
+        {["google_pmax", "google_search", "sklik_search", "sklik_display", "meta", "linkedin", "bannery"].map(tabKey => {
+          const channelMap: Record<string, string> = {
+            google_pmax: "Google PMAX",
+            google_search: "Google Search",
+            sklik_search: "Sklik Search",
+            sklik_display: "Sklik Display",
+            meta: "META Ads",
+            linkedin: "LinkedIn Ads",
+            bannery: "Bannery",
+          };
+          if (activeTab !== tabKey) return null;
+          const channelName = channelMap[tabKey];
+          const filteredSettings = {
+            ...settings,
+            textTypes: settings.textTypes.filter(t => t.channel === channelName),
+          };
+          return (
+            <div key={tabKey}>
+              <GeneratedTextsTab camp={camp} settings={filteredSettings} setCustomText={setCustomText} />
+            </div>
+          );
+        })}
         {activeTab === "grafik" && <GrafikTab camp={camp} />}
       </div>
     </div>
