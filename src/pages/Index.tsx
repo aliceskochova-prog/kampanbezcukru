@@ -252,53 +252,23 @@ export default function CampaignManager() {
           usp: genBrief.usp,
           cta: genBrief.cta,
           audience: genBrief.audience,
-          headlineCount: settings.headlineCount,
-          headlineLength: settings.headlineLength,
-          descriptionCount: settings.descriptionCount,
-          descriptionLength: settings.descriptionLength,
           tone: settings.tone,
           clientName: settings.clientName,
+          textTypes: settings.textTypes.map(t => ({
+            id: t.id, label: t.label, count: t.count, maxLength: t.maxLength,
+          })),
         },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
       const p = genBrief.product;
+      const results: Record<string, string[]> = data.results || {};
       update(c => {
-        c.googleTexts[p] = {
-          shortHeadlines: data.google?.shortHeadlines || [],
-          longHeadlines: data.google?.longHeadlines || [],
-          descriptions: data.google?.descriptions || [],
-          extensions: data.google?.extensions || [],
-        };
-        c.sklikTexts[p] = {
-          headlines: data.sklik?.headlines || [],
-          descriptions: data.sklik?.descriptions || [],
-          displayShortTitles: data.sklik?.displayShortTitles || [],
-          displayLongTitles: data.sklik?.displayLongTitles || [],
-          displayDescriptions: data.sklik?.displayDescriptions || [],
-        };
-        const metaTexts: Record<string, string> = {};
-        if (data.meta?.mainTexts && Array.isArray(data.meta.mainTexts)) {
-          data.meta.mainTexts.forEach((t: string, i: number) => {
-            metaTexts[`mainText_${i}`] = t;
-          });
-        } else if (data.meta?.mainTextVisible) {
-          metaTexts[`mainText_0`] = data.meta.mainTextVisible + (data.meta.mainTextHidden ? "\n\n" + data.meta.mainTextHidden : "");
-        }
-        if (data.meta?.headlines && Array.isArray(data.meta.headlines)) {
-          data.meta.headlines.forEach((t: string, i: number) => {
-            metaTexts[`headline_${i}`] = t;
-          });
-        } else if (data.meta?.headline) {
-          metaTexts[`headline_0`] = data.meta.headline;
-        }
-        (c.metaTexts[p] as any) = metaTexts;
+        if (!c.customTexts) c.customTexts = {};
+        c.customTexts[p] = { ...results };
       });
       toast.success(`Texty pro "${p}" vygenerovány!`);
-      setTimeout(() => {
-        const currentCamp = campaigns[activeIdx];
-        if (currentCamp) saveCampaign(currentCamp);
-      }, 100);
+      setActiveTab("results");
     } catch (e: any) {
       console.error("Generation error:", e);
       toast.error(e.message || "Chyba při generování textů. Zkuste to znovu.");
