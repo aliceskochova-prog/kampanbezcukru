@@ -18,6 +18,7 @@ import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
 import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
 import { SettingsTab } from "@/components/campaign/SettingsTab";
+import { GeneratedTextsTab } from "@/components/campaign/GeneratedTextsTab";
 
 interface PPCRow {
   platforma: string;
@@ -66,9 +67,10 @@ const TABS = [
   { key: "settings", label: "⚙️ Nastavení" },
   { key: "checklist", label: "✅ Checklist" },
   { key: "generate", label: "✨ Generátor textů" },
-  { key: "google", label: "Google Ads texty" },
-  { key: "sklik", label: "Sklik texty" },
-  { key: "meta", label: "META Ads texty" },
+  { key: "results", label: "📝 Vygenerované texty" },
+  { key: "google", label: "Google Ads" },
+  { key: "sklik", label: "Sklik" },
+  { key: "meta", label: "META Ads" },
   { key: "grafik", label: "🎨 Pro grafika" },
 ];
 
@@ -81,6 +83,7 @@ function dbToCampaign(row: any): Campaign {
     googleTexts: row.google_texts || {},
     sklikTexts: row.sklik_texts || {},
     metaTexts: row.meta_texts || {},
+    customTexts: row.custom_texts || {},
   };
 }
 
@@ -164,6 +167,7 @@ export default function CampaignManager() {
         google_texts: camp.googleTexts,
         sklik_texts: camp.sklikTexts,
         meta_texts: camp.metaTexts,
+        custom_texts: camp.customTexts,
       })
       .eq("id", camp.id);
   }, []);
@@ -192,6 +196,15 @@ export default function CampaignManager() {
       delete c.googleTexts[name];
       delete c.sklikTexts[name];
       delete c.metaTexts[name];
+      if (c.customTexts) delete c.customTexts[name];
+    });
+
+  const setCustomText = (product: string, typeId: string, idx: number, val: string) =>
+    update(c => {
+      if (!c.customTexts) c.customTexts = {};
+      if (!c.customTexts[product]) c.customTexts[product] = {};
+      if (!c.customTexts[product][typeId]) c.customTexts[product][typeId] = [];
+      c.customTexts[product][typeId][idx] = val;
     });
 
   const setChecklistStatus = (product: string, itemLabel: string, val: string) =>
@@ -240,53 +253,23 @@ export default function CampaignManager() {
           usp: genBrief.usp,
           cta: genBrief.cta,
           audience: genBrief.audience,
-          headlineCount: settings.headlineCount,
-          headlineLength: settings.headlineLength,
-          descriptionCount: settings.descriptionCount,
-          descriptionLength: settings.descriptionLength,
           tone: settings.tone,
           clientName: settings.clientName,
+          textTypes: settings.textTypes.map(t => ({
+            id: t.id, label: t.label, count: t.count, maxLength: t.maxLength,
+          })),
         },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
       const p = genBrief.product;
+      const results: Record<string, string[]> = data.results || {};
       update(c => {
-        c.googleTexts[p] = {
-          shortHeadlines: data.google?.shortHeadlines || [],
-          longHeadlines: data.google?.longHeadlines || [],
-          descriptions: data.google?.descriptions || [],
-          extensions: data.google?.extensions || [],
-        };
-        c.sklikTexts[p] = {
-          headlines: data.sklik?.headlines || [],
-          descriptions: data.sklik?.descriptions || [],
-          displayShortTitles: data.sklik?.displayShortTitles || [],
-          displayLongTitles: data.sklik?.displayLongTitles || [],
-          displayDescriptions: data.sklik?.displayDescriptions || [],
-        };
-        const metaTexts: Record<string, string> = {};
-        if (data.meta?.mainTexts && Array.isArray(data.meta.mainTexts)) {
-          data.meta.mainTexts.forEach((t: string, i: number) => {
-            metaTexts[`mainText_${i}`] = t;
-          });
-        } else if (data.meta?.mainTextVisible) {
-          metaTexts[`mainText_0`] = data.meta.mainTextVisible + (data.meta.mainTextHidden ? "\n\n" + data.meta.mainTextHidden : "");
-        }
-        if (data.meta?.headlines && Array.isArray(data.meta.headlines)) {
-          data.meta.headlines.forEach((t: string, i: number) => {
-            metaTexts[`headline_${i}`] = t;
-          });
-        } else if (data.meta?.headline) {
-          metaTexts[`headline_0`] = data.meta.headline;
-        }
-        (c.metaTexts[p] as any) = metaTexts;
+        if (!c.customTexts) c.customTexts = {};
+        c.customTexts[p] = { ...results };
       });
       toast.success(`Texty pro "${p}" vygenerovány!`);
-      setTimeout(() => {
-        const currentCamp = campaigns[activeIdx];
-        if (currentCamp) saveCampaign(currentCamp);
-      }, 100);
+      setActiveTab("results");
     } catch (e: any) {
       console.error("Generation error:", e);
       toast.error(e.message || "Chyba při generování textů. Zkuste to znovu.");
@@ -532,6 +515,9 @@ export default function CampaignManager() {
             onAddProduct={addProduct}
             onRemoveProduct={removeProduct}
           />
+        )}
+        {activeTab === "results" && (
+          <GeneratedTextsTab camp={camp} settings={settings} setCustomText={setCustomText} />
         )}
         {activeTab === "google" && <GoogleTextsTab camp={camp} setGoogleText={setGoogleText} settings={settings} />}
         {activeTab === "sklik" && <SklikTextsTab camp={camp} setSklikText={setSklikText} settings={settings} />}

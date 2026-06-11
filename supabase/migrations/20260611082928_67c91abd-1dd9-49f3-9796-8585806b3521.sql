@@ -1,0 +1,1 @@
+ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS custom_texts jsonb NOT NULL DEFAULT '{}'::jsonb;
