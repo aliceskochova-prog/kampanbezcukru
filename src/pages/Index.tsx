@@ -18,6 +18,7 @@ import { SklikTextsTab } from "@/components/campaign/SklikTextsTab";
 import { MetaTextsTab } from "@/components/campaign/MetaTextsTab";
 import { GrafikTab } from "@/components/campaign/GrafikTab";
 import { SettingsTab } from "@/components/campaign/SettingsTab";
+import { GeneratedTextsTab } from "@/components/campaign/GeneratedTextsTab";
 
 interface PPCRow {
   platforma: string;
