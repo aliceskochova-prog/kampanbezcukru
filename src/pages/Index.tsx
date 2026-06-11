@@ -43,7 +43,7 @@ function exportToExcel(data: PPCRow[], fileName = "PPC_Export"): void {
       if (a.typTextu > b.typTextu) return 1;
       return a.cislo - b.cislo;
     });
-    const wsData = [header, ...sorted.map(r => [r.produkt, r.typTextu, r.cislo, r.text, r.znaku, r.limit || "", r.status])];
+    const wsData = [header, ...sorted.map(r => [r.produkt, r.typTextu, r.cislo, r.text, { f: "LEN(D" + (sorted.indexOf(r) + 2) + ")" }, r.limit || "", r.status])];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws["!cols"] = [{ wch: 20 }, { wch: 25 }, { wch: 4 }, { wch: 60 }, { wch: 7 }, { wch: 7 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, ws, channel);
