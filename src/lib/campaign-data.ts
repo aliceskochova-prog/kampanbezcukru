@@ -22,6 +22,7 @@ export interface TextType {
   label: string;
   count: number;
   maxLength: number;
+  channel?: string;
 }
 
 export interface GenSettings {
@@ -59,59 +60,70 @@ export const CAMPAIGN_TEMPLATES: Record<string, { label: string; textTypes: Text
   google_pmax: {
     label: "Google PMAX",
     textTypes: [
-      { id: "headline_short", label: "Nadpis (30 zn.)", count: 15, maxLength: 30 },
-      { id: "headline_long", label: "Dlouhý nadpis (90 zn.)", count: 5, maxLength: 90 },
-      { id: "description", label: "Popis (90 zn.)", count: 5, maxLength: 90 },
+      { id: "gpmax_headline_short", label: "Nadpis (30 zn.)", count: 15, maxLength: 30, channel: "Google PMAX" },
+      { id: "gpmax_headline_long", label: "Dlouhý nadpis (90 zn.)", count: 5, maxLength: 90, channel: "Google PMAX" },
+      { id: "gpmax_description", label: "Popis (90 zn.)", count: 5, maxLength: 90, channel: "Google PMAX" },
     ],
   },
   google_search: {
     label: "Google Search",
     textTypes: [
-      { id: "headline_short", label: "Nadpis (30 zn.)", count: 15, maxLength: 30 },
-      { id: "description", label: "Popis (90 zn.)", count: 4, maxLength: 90 },
-      { id: "extension", label: "Rozšíření / Sitelink (25 zn.)", count: 8, maxLength: 25 },
+      { id: "gsearch_headline_short", label: "Nadpis (30 zn.)", count: 15, maxLength: 30, channel: "Google Search" },
+      { id: "gsearch_description", label: "Popis (90 zn.)", count: 4, maxLength: 90, channel: "Google Search" },
+      { id: "gsearch_extension", label: "Rozšíření / Sitelink (25 zn.)", count: 8, maxLength: 25, channel: "Google Search" },
     ],
   },
   sklik_search: {
     label: "Sklik Search",
     textTypes: [
-      { id: "sklik_headline", label: "Titulek (30 zn.)", count: 10, maxLength: 30 },
-      { id: "sklik_desc", label: "Popisek (90 zn.)", count: 4, maxLength: 90 },
+      { id: "sklik_headline", label: "Titulek (30 zn.)", count: 10, maxLength: 30, channel: "Sklik Search" },
+      { id: "sklik_desc", label: "Popisek (90 zn.)", count: 4, maxLength: 90, channel: "Sklik Search" },
     ],
   },
   sklik_display: {
     label: "Sklik Display",
     textTypes: [
-      { id: "display_short", label: "Krátký titulek (25 zn.)", count: 5, maxLength: 25 },
-      { id: "display_long", label: "Dlouhý titulek (90 zn.)", count: 5, maxLength: 90 },
-      { id: "display_desc", label: "Popisek display (90 zn.)", count: 5, maxLength: 90 },
+      { id: "display_short", label: "Krátký titulek (25 zn.)", count: 5, maxLength: 25, channel: "Sklik Display" },
+      { id: "display_long", label: "Dlouhý titulek (90 zn.)", count: 5, maxLength: 90, channel: "Sklik Display" },
+      { id: "display_desc", label: "Popisek display (90 zn.)", count: 5, maxLength: 90, channel: "Sklik Display" },
     ],
   },
   meta: {
     label: "META Ads",
     textTypes: [
-      { id: "meta_main", label: "Hlavní text (125 zn.)", count: 5, maxLength: 125 },
-      { id: "meta_headline", label: "Headline (40 zn.)", count: 5, maxLength: 40 },
-      { id: "meta_desc", label: "Popis (30 zn.)", count: 5, maxLength: 30 },
+      { id: "meta_main", label: "Hlavní text (125 zn.)", count: 5, maxLength: 125, channel: "META Ads" },
+      { id: "meta_headline", label: "Headline (40 zn.)", count: 5, maxLength: 40, channel: "META Ads" },
+      { id: "meta_desc", label: "Popis (30 zn.)", count: 5, maxLength: 30, channel: "META Ads" },
     ],
   },
   linkedin: {
     label: "LinkedIn Ads",
     textTypes: [
-      { id: "li_headline", label: "Headline (70 zn.)", count: 3, maxLength: 70 },
-      { id: "li_desc", label: "Popis (100 zn.)", count: 3, maxLength: 100 },
+      { id: "li_headline", label: "Headline (70 zn.)", count: 3, maxLength: 70, channel: "LinkedIn Ads" },
+      { id: "li_desc", label: "Popis (100 zn.)", count: 3, maxLength: 100, channel: "LinkedIn Ads" },
     ],
   },
   banner: {
     label: "Bannery",
     textTypes: [
-      { id: "banner_short", label: "Krátký nadpis (25 zn.)", count: 5, maxLength: 25 },
-      { id: "banner_long", label: "Delší nadpis (40 zn.)", count: 5, maxLength: 40 },
+      { id: "banner_short", label: "Krátký nadpis (25 zn.)", count: 5, maxLength: 25, channel: "Bannery" },
+      { id: "banner_long", label: "Delší nadpis (40 zn.)", count: 5, maxLength: 40, channel: "Bannery" },
     ],
   },
 };
 
 // ─── Výchozí nastavení ────────────────────────────────────────────────────────
+
+// Všech 7 kanálů ve výchozím stavu — generátor vyrobí texty pro každý
+const ALL_TEMPLATES_FLAT: TextType[] = [
+  ...CAMPAIGN_TEMPLATES.google_pmax.textTypes,
+  ...CAMPAIGN_TEMPLATES.google_search.textTypes,
+  ...CAMPAIGN_TEMPLATES.sklik_search.textTypes,
+  ...CAMPAIGN_TEMPLATES.sklik_display.textTypes,
+  ...CAMPAIGN_TEMPLATES.meta.textTypes,
+  ...CAMPAIGN_TEMPLATES.linkedin.textTypes,
+  ...CAMPAIGN_TEMPLATES.banner.textTypes,
+];
 
 export const defaultGenSettings: GenSettings = {
   clientName: "",
@@ -120,8 +132,7 @@ export const defaultGenSettings: GenSettings = {
   descriptionCount: 5,
   descriptionLength: 90,
   tone: "přátelský",
-  // Výchozí šablona = Google PMAX
-  textTypes: CAMPAIGN_TEMPLATES.google_pmax.textTypes.map(t => ({ ...t })),
+  textTypes: ALL_TEMPLATES_FLAT.map(t => ({ ...t })),
 };
 
 // ─── Checklist ────────────────────────────────────────────────────────────────
@@ -168,7 +179,7 @@ export function defaultCampaign(name: string): Campaign {
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 
-const SETTINGS_KEY = "ppc_gen_settings_v2";
+const SETTINGS_KEY = "ppc_gen_settings_v3";
 
 export function loadSettings(): GenSettings {
   try {
