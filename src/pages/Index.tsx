@@ -66,9 +66,10 @@ const TABS = [
   { key: "settings", label: "⚙️ Nastavení" },
   { key: "checklist", label: "✅ Checklist" },
   { key: "generate", label: "✨ Generátor textů" },
-  { key: "google", label: "Google Ads texty" },
-  { key: "sklik", label: "Sklik texty" },
-  { key: "meta", label: "META Ads texty" },
+  { key: "results", label: "📝 Vygenerované texty" },
+  { key: "google", label: "Google Ads" },
+  { key: "sklik", label: "Sklik" },
+  { key: "meta", label: "META Ads" },
   { key: "grafik", label: "🎨 Pro grafika" },
 ];
 
@@ -81,6 +82,7 @@ function dbToCampaign(row: any): Campaign {
     googleTexts: row.google_texts || {},
     sklikTexts: row.sklik_texts || {},
     metaTexts: row.meta_texts || {},
+    customTexts: row.custom_texts || {},
   };
 }
 
@@ -164,6 +166,7 @@ export default function CampaignManager() {
         google_texts: camp.googleTexts,
         sklik_texts: camp.sklikTexts,
         meta_texts: camp.metaTexts,
+        custom_texts: camp.customTexts,
       })
       .eq("id", camp.id);
   }, []);
@@ -192,6 +195,15 @@ export default function CampaignManager() {
       delete c.googleTexts[name];
       delete c.sklikTexts[name];
       delete c.metaTexts[name];
+      if (c.customTexts) delete c.customTexts[name];
+    });
+
+  const setCustomText = (product: string, typeId: string, idx: number, val: string) =>
+    update(c => {
+      if (!c.customTexts) c.customTexts = {};
+      if (!c.customTexts[product]) c.customTexts[product] = {};
+      if (!c.customTexts[product][typeId]) c.customTexts[product][typeId] = [];
+      c.customTexts[product][typeId][idx] = val;
     });
 
   const setChecklistStatus = (product: string, itemLabel: string, val: string) =>
