@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           checklist: Json
           created_at: string
+          custom_texts: Json
           google_texts: Json
           id: string
           meta_texts: Json
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           checklist?: Json
           created_at?: string
+          custom_texts?: Json
           google_texts?: Json
           id?: string
           meta_texts?: Json
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           checklist?: Json
           created_at?: string
+          custom_texts?: Json
           google_texts?: Json
           id?: string
           meta_texts?: Json
