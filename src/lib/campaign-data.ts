@@ -179,7 +179,7 @@ export function defaultCampaign(name: string): Campaign {
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 
-const SETTINGS_KEY = "ppc_gen_settings_v3";
+const SETTINGS_KEY = "ppc_gen_settings_v4";
 
 export function loadSettings(): GenSettings {
   try {
