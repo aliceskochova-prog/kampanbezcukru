@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import {
   CHECKLIST_ITEMS,
   defaultCampaign,
@@ -29,28 +30,28 @@ interface PPCRow {
 }
 
 function exportToExcel(data: PPCRow[], fileName = "PPC_Export"): void {
-  const header = ["Platforma", "Produkt", "Typ textu", "Č.", "Text", "Znaků", "Limit", "Status"];
   const PLAT_ORDER = ["Google PMAX", "Google Search", "Sklik Search", "Sklik Display", "META Ads", "LinkedIn Ads", "Bannery"];
-  const sorted = [...data].sort((a, b) => {
-    const pi = PLAT_ORDER.indexOf(a.platforma) - PLAT_ORDER.indexOf(b.platforma);
-    if (pi !== 0) return pi;
-    if (a.produkt < b.produkt) return -1;
-    if (a.produkt > b.produkt) return 1;
-    if (a.typTextu < b.typTextu) return -1;
-    if (a.typTextu > b.typTextu) return 1;
-    return a.cislo - b.cislo;
+  const header = ["Produkt", "Typ textu", "Č.", "Text", "Znaků", "Limit", "Status"];
+  const wb = XLSX.utils.book_new();
+
+  PLAT_ORDER.forEach(channel => {
+    const channelRows = data.filter(r => r.platforma === channel);
+    if (channelRows.length === 0) return;
+    const sorted = [...channelRows].sort((a, b) => {
+      if (a.produkt < b.produkt) return -1;
+      if (a.produkt > b.produkt) return 1;
+      if (a.typTextu < b.typTextu) return -1;
+      if (a.typTextu > b.typTextu) return 1;
+      return a.cislo - b.cislo;
+    });
+    const wsData = [header, ...sorted.map(r => [r.produkt, r.typTextu, r.cislo, r.text, r.znaku, r.limit || "", r.status])];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws["!cols"] = [{ wch: 20 }, { wch: 25 }, { wch: 4 }, { wch: 60 }, { wch: 7 }, { wch: 7 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, channel);
   });
-  const rows = sorted.map(r => [r.platforma, r.produkt, r.typTextu, r.cislo, r.text, r.znaku, r.limit || "", r.status]);
-  const csvRows = [header, ...rows].map(row =>
-    row.map(cell => `"${String(cell).replace(/"/g, '""')}`).join(",")
-  );
-  const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${fileName}_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+
+  const date = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `${fileName}_${date}.xlsx`);
 }
 
 function getStatus(len: number, max: number): string {
@@ -391,107 +392,3 @@ export default function CampaignManager() {
             onClick={handleExport}
             className="bg-green-600 hover:bg-green-500 text-white border-none rounded-md px-3 py-1.5 cursor-pointer text-sm font-semibold transition-colors"
           >
-            📥 Export CSV
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-card border-b border-border px-6 py-2.5 flex items-center gap-6 no-print">
-        <div className="flex-1">
-          <div className="text-xs text-muted-foreground mb-1">Celková dokončenost: {pct}%</div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                pct === 100 ? "bg-status-done" : pct > 50 ? "bg-primary" : "bg-status-pending"
-              }`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-        <div className="flex gap-4">
-          {camp.products.map(p => {
-            const pc = completionFor(p);
-            return (
-              <div key={p} className="text-center">
-                <div className="text-[11px] text-muted-foreground">{p}</div>
-                <div className={`text-base font-bold ${
-                  pc === 100 ? "text-status-done" : pc > 50 ? "text-primary" : "text-status-pending"
-                }`}>
-                  {pc}%
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="bg-card border-b border-border px-6 flex no-print">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`bg-transparent border-none px-4 py-3 cursor-pointer text-sm transition-colors ${
-              activeTab === t.key
-                ? "border-b-[3px] border-b-primary text-primary font-bold"
-                : "border-b-[3px] border-b-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="p-6">
-        {activeTab === "settings" && (
-          <SettingsTab
-            settings={settings}
-            setSettings={setSettings}
-            onSaveDefault={() => {
-              saveSettings(settings);
-              toast.success("Nastavení uloženo jako výchozí.");
-            }}
-          />
-        )}
-        {activeTab === "checklist" && <ChecklistTab camp={camp} setChecklistStatus={setChecklistStatus} />}
-        {activeTab === "generate" && (
-          <GeneratorTab
-            camp={camp}
-            genBrief={genBrief}
-            setGenBrief={setGenBrief}
-            generating={generating}
-            onGenerate={generateTexts}
-            settings={settings}
-            onAddProduct={addProduct}
-            onRemoveProduct={removeProduct}
-          />
-        )}
-        {activeTab === "results" && (
-          <GeneratedTextsTab camp={camp} settings={settings} setCustomText={setCustomText} />
-        )}
-        {["google_pmax", "google_search", "sklik_search", "sklik_display", "meta", "linkedin", "bannery"].map(tabKey => {
-          const channelMap: Record<string, string> = {
-            google_pmax: "Google PMAX",
-            google_search: "Google Search",
-            sklik_search: "Sklik Search",
-            sklik_display: "Sklik Display",
-            meta: "META Ads",
-            linkedin: "LinkedIn Ads",
-            bannery: "Bannery",
-          };
-          if (activeTab !== tabKey) return null;
-          const channelName = channelMap[tabKey];
-          const filteredSettings = {
-            ...settings,
-            textTypes: settings.textTypes.filter(t => t.channel === channelName),
-          };
-          return (
-            <div key={tabKey}>
-              <GeneratedTextsTab camp={camp} settings={filteredSettings} setCustomText={setCustomText} />
-            </div>
-          );
-        })}
-        {activeTab === "grafik" && <GrafikTab camp={camp} />}
-      </div>
-    </div>
-  );
-}
